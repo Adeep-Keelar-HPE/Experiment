@@ -3,7 +3,7 @@ run-name: ${{ github.actor }} is testing out GitHub Actions
 on:
   push:
     branches:
-      - microk8s-1.29
+      - main
 jobs:
   Explore-Github-Actions:
     runs-on: ubuntu-20.04
@@ -15,8 +15,14 @@ jobs:
       # Step 1: Checkout the repository code
       - name: Check out repository code
         uses: actions/checkout@v4
-
-      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+        with:
+          ref: main
+      
+      # Step 2: Checkout the branch repository.
+      - name: Checkout to Microk8s Branch
+        uses: actions/checkout@v4
+        with:
+          ref: microk8s-1.29
 
       # Step 4: List files in the repository
       - name: List files in the repository
@@ -25,8 +31,9 @@ jobs:
       # Step 5: Run the shell script (script.sh)
       - name: Run script.sh
         run: |
-          chmod +x scripts/pre-validation/config.sh
-          chmod +x scripts/pre-validation/pre-validation.sh
-          ./scripts/pre-validation/pre-validation.sh
-
+          cp ../main/scripts/pre-validations/config.sh ./
+          cp ../main/scripts/pre-validations/pre-validation.sh ./
+          chmod +x config.sh
+          chmod +x pre-validation.sh
+          ./pre-validation.sh
       - run: echo "🍏 This job's status is ${{ job.status }}."
