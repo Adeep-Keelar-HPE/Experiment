@@ -8,11 +8,34 @@ jobs:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
       - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
       - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+      
+      # Step 1: Checkout the repository code
       - name: Check out repository code
         uses: actions/checkout@v4
+
       - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
-      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
+
+      # Step 2: Checkout to branch A-1
+      - name: Checkout branch microk8s-1.29
+        run: git checkout microk8s-1.29
+
+      - run: echo "🔄 Switched to branch microk8s-1.29"
+
+      # Step 3: Checkout the main branch (if not already on it)
+      - name: Checkout main branch
+        run: git checkout main
+
+      - run: echo "🔄 Switched to main branch"
+
+      # Step 4: List files in the repository
       - name: List files in the repository
+        run: ls ${{ github.workspace }}
+
+      # Step 5: Run the shell script (script.sh)
+      - name: Run script.sh
         run: |
-          ls ${{ github.workspace }}
+          chmod +x scripts/pre-validation/config.sh
+          chmod +x scripts/pre-validation/pre-validation.sh
+          ./pre-validation.sh
+
       - run: echo "🍏 This job's status is ${{ job.status }}."
