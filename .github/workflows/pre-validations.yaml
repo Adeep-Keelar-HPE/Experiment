@@ -17,6 +17,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
+          path: main_code
       
       # Step 2: Checkout the branch repository.
       - name: Checkout to Microk8s Branch
@@ -31,8 +32,8 @@ jobs:
       # Step 5: Run the shell script (script.sh)
       - name: Run script.sh
         run: |
-          cp main/scripts/pre-validations/config.sh ./
-          cp main/scripts/pre-validations/pre-validation.sh ./
+          cp main_code/scripts/pre-validations/config.sh ./
+          cp main_code/scripts/pre-validations/pre-validation.sh ./
           chmod +x config.sh
           chmod +x pre-validation.sh
           ./pre-validation.sh
