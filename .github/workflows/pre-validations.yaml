@@ -1,6 +1,9 @@
 name: Pre-Validation Check
 run-name: ${{ github.actor }} is testing out GitHub Actions
-on: [push]
+on:
+  push:
+    branches:
+      - microk8s-1.29
 jobs:
   Explore-Github-Actions:
     runs-on: ubuntu-20.04
@@ -15,18 +18,6 @@ jobs:
 
       - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
 
-      # Step 2: Checkout to branch A-1
-      - name: Checkout branch microk8s-1.29
-        run: git checkout microk8s-1.29
-
-      - run: echo "🔄 Switched to branch microk8s-1.29"
-
-      # Step 3: Checkout the main branch (if not already on it)
-      - name: Checkout main branch
-        run: git checkout main
-
-      - run: echo "🔄 Switched to main branch"
-
       # Step 4: List files in the repository
       - name: List files in the repository
         run: ls ${{ github.workspace }}
@@ -36,6 +27,6 @@ jobs:
         run: |
           chmod +x scripts/pre-validation/config.sh
           chmod +x scripts/pre-validation/pre-validation.sh
-          ./pre-validation.sh
+          ./scripts/pre-validation/pre-validation.sh
 
       - run: echo "🍏 This job's status is ${{ job.status }}."
