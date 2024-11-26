@@ -1,0 +1,248 @@
+#!/usr/bin/env bash
+
+set -ex
+
+source $SNAP/actions/common/utils.sh
+
+use_snap_env
+
+app=kubelite
+
+if ! [ -e ${SNAP_DATA}/var/lock/lite.lock ]
+then
+  echo "${app} will not run"
+  exit 0
+fi
+
+if [ -e ${SNAP_DATA}/var/lock/clustered.lock ]
+then
+  refresh_opt_in_local_config "start-control-plane" "false" kubelite
+elif [ -e ${SNAP_DATA}/var/lock/low-memory-guard.lock ]
+then
+  echo "${app} will not run, memory guard is enabled"
+  exit 0
+else
+  refresh_opt_in_local_config "start-control-plane" "true" kubelite
+fi
+
+if [ -e ${SNAP_DATA}/var/lock/stopped.lock ]
+then
+  # Mark the cluster as starting. This is needed in case you
+  # microk8s stop and then snap start microk8s
+  rm -f ${SNAP_DATA}/var/lock/stopped.lock &> /dev/null
+fi
+
+## API server configuration
+
+# Check if we advertise an address. If we do we do not need to wait for a default network interface.
+if ! grep -E "(--advertise-address|--bind-address)" $SNAP_DATA/args/kube-apiserver &> /dev/null
+then
+  # we keep this command to cleanup the file, as it is no longer needed.
+  rm -f ${SNAP_DATA}/external_ip.txt
+
+  # check if there is a default route available
+  if ! default_route_exists
+  then
+    echo "WARNING: No default route exists. MicroK8s might not work properly."
+    echo "Refer to https://microk8s.io/docs for instructions on air-gap deployments."
+  fi
+
+  wait_for_default_route
+fi
+
+if [ -e ${SNAP_DATA}/args/ha-conf ]
+then
+  storage_param="$(get_opt_in_config '--storage-dir' 'k8s-dqlite')"
+  storage_dir="$(eval echo $storage_param)"
+  if $(grep -qE "^failure-domain" "${SNAP_DATA}/args/ha-conf"); then
+    val="$(get_opt_in_config 'failure-domain' 'ha-conf')"
+    echo "$val" > $storage_dir/failure-domain
+  fi
+fi
+
+# Sanitise arguments
+if [ -e $SNAP_DATA/var/lock/no-arg-sanitisation ]
+then
+  echo "Skipping argument sanitisation."
+else
+  echo "Sanitise arguments."
+  sanitise_args_kubeapi_server
+  sanitise_args_kubelet
+  sanitise_args_kube_proxy
+  sanitise_args_kube_scheduler
+  sanitise_args_kube_controller_manager
+fi
+
+## Kubelet configuration
+pod_cidr="$(cat $SNAP_DATA/args/kube-proxy | grep "cluster-cidr" | tr "=" " "| gawk '{print $2}')"
+if [ -z "$pod_cidr" ]
+then
+  pod_cidr="$(cat $SNAP_DATA/args/kubelet | grep "pod-cidr" | tr "=" " "| gawk '{print $2}')"
+  if [ -z "$pod_cidr" ]
+  then
+    pod_cidr="$(jq .Network $SNAP_DATA/args/flannel-network-mgr-config | tr -d '\"')"
+  fi
+fi
+if ! [ -z "$pod_cidr" ]
+then
+  if ! iptables -C FORWARD -s "$pod_cidr" -m comment --comment "generated for MicroK8s pods" -j ACCEPT
+  then
+    # The point of "|| true" is that if for any reason this is failing we "fallback"
+    # to the previous manual approach of pointing people to the troubleshooting guide.
+    iptables -t filter -A FORWARD -s "$pod_cidr" -m comment --comment "generated for MicroK8s pods" -j ACCEPT || true
+    iptables -t filter -A FORWARD -d "$pod_cidr" -m comment --comment "generated for MicroK8s pods" -j ACCEPT || true
+    iptables-nft -t filter -A FORWARD -s "$pod_cidr" -m comment --comment "generated for MicroK8s pods" -j ACCEPT || true
+    iptables-nft -t filter -A FORWARD -d "$pod_cidr" -m comment --comment "generated for MicroK8s pods" -j ACCEPT || true
+  fi
+fi
+
+# Configure host resolv.conf file with non-loopback upstream nameservers
+resolv_conf="$(cat $SNAP_DATA/args/kubelet | grep -- "--resolv-conf" | tr "=" " " | gawk '{print $2}')"
+if [ -z "$resolv_conf" ]
+then
+  host_resolv_conf="$("$SNAP/usr/bin/python3" "$SNAP/scripts/find-resolv-conf.py")"
+  if [ ! -z "$host_resolv_conf" ]; then
+    refresh_opt_in_local_config "resolv-conf" "${host_resolv_conf}" "kubelet"
+    echo "Configured kubelet to use ${host_resolv_conf} for DNS configuration"
+  fi
+fi
+
+#UFW configuration
+if ! is_strict && (ufw version &> /dev/null)
+then
+  if ufw status | grep -q "Status: active" &&
+     ! [ -e ${SNAP_DATA}/var/lock/skip.ufw ]
+  then
+    # These succeed regardless of whether the rule exists already or not
+    echo "Found enabled UFW: adding rules to allow in/out traffic on 'cali+' and 'vxlan.calico' devices"
+    if ! ufw allow in on vxlan.calico ||
+       ! ufw allow out on vxlan.calico ||
+       ! ufw allow in on cali+ ||
+       ! ufw allow out on cali+
+    then
+      echo "Failed to update UFW rules. You may want to set them manually."
+    fi
+  fi
+fi
+
+if ! is_strict &&
+   (systemctl show snap.microk8s.daemon-kubelite.service -p NRestarts | grep -qv "NRestarts=0") &&
+   (grep -qv cpuset /sys/fs/cgroup/cgroup.subtree_control) &&
+   [ ! -e /etc/systemd/system/snap.microk8s.daemon-kubelite.service.d/delegate.conf ]
+then
+  mkdir -p /etc/systemd/system/snap.microk8s.daemon-kubelite.service.d
+  tee /etc/systemd/system/snap.microk8s.daemon-kubelite.service.d/delegate.conf > /dev/null <<EOF
+[Service]
+Delegate=yes
+EOF
+  systemctl daemon-reload || true
+  snap restart microk8s || true
+fi
+
+# wait for containerd socket
+if grep -e "--address " $SNAP_DATA/args/containerd &> /dev/null
+then
+  socket=$(grep -e "--address " $SNAP_DATA/args/containerd | gawk '{print $2}')
+  # socket_file may be of the form ${SNAP_DATA}/containerd.sock
+  # we need to replace any variables
+  socket_file_expand=$(eval echo ${socket})
+  # wait up until 20 seconds for the docker socket to appear
+  n=0
+  until [ $n -ge 10 ]
+  do
+    test -S "${socket_file_expand}" && break
+    echo "Waiting for containerd socket ${socket_file_expand} to appear. (attempt $n)"
+    n=$[$n+1]
+    sleep 2
+  done
+fi
+
+# Handle non-unified cgroups https://github.com/canonical/microk8s/issues/519
+if [ -e /proc/$$/cgroup ] &&
+ [[ $(gawk -F '[:]' '(/cpu/ && !/cpuset/) || /memory/ {print $3}' /proc/$$/cgroup | uniq | wc -l) -eq "2" ]] &&
+ ! grep -e "runtime-cgroups" $SNAP_DATA/args/kubelet &> /dev/null &&
+ ! grep -e "kubelet-cgroups" $SNAP_DATA/args/kubelet &> /dev/null &&
+ [ -e  /sys/fs/cgroup/systemd/system.slice ]
+then
+  refresh_opt_in_local_config "runtime-cgroups" "/systemd/system.slice" kubelet
+  refresh_opt_in_local_config "kubelet-cgroups" "/systemd/system.slice" kubelet
+fi
+
+if [ -L /var/lib/kubelet ]
+then
+  echo "\`/var/lib/kubelet\` is a symbolic link"
+  ls -l /var/lib/kubelet
+else
+  echo "\`/var/lib/kubelet\` already exists. CSI add-ons have to point to $SNAP_COMMON for kubelet."
+fi
+
+## Kube-proxy configuration
+
+if [ -e "$SNAP_DATA/args/cni-network/cni.yaml" ]
+then
+  ipvs="ipv4 ipv6"
+  for ipv in $ipvs
+  do
+    if [ -e "/proc/sys/net/$ipv/conf/all/forwarding" ] &&
+       ! grep -e "1" "/proc/sys/net/$ipv/conf/all/forwarding"
+    then
+      echo "Enable ip forwarding for $ipv"
+      echo "1" > "/proc/sys/net/$ipv/conf/all/forwarding"
+    fi
+  done
+fi
+
+if [ -f "${SNAP_DATA}/var/lock/host-access-enabled" ] &&
+   ! ip link show lo:microk8s &> /dev/null
+then
+  IP_ADDRESS=$(<"${SNAP_DATA}/var/lock/host-access-enabled")
+  if ! "${SNAP}/sbin/ip" addr add "${IP_ADDRESS}" dev lo label lo:microk8s
+  then
+    echo "Failed to enable host-access"
+  else
+    echo "Host-access enabled [${IP_ADDRESS}]"
+  fi
+fi
+
+# kube-proxy reads some values related to the 'nf_conntrack' kernel
+# module from procfs on startup, so we must ensure it is loaded:
+if ! [ -f /proc/sys/net/netfilter/nf_conntrack_max ]
+then
+  if /sbin/modprobe nf_conntrack || modprobe nf_conntrack
+  then
+    echo "Successfully loaded nf_conntrack module."
+  else
+    echo -n "Failed to load nf_conntrack kernel module. "
+    echo "ProxyServer will fail to start until it's loaded."
+  fi
+fi
+
+# on lxc containers do not try to change the conntrack configuration
+# see https://github.com/canonical/microk8s/issues/1438
+if grep -E lxc /proc/1/environ &&
+  ! grep -E "conntrack-max-per-core" $SNAP_DATA/args/kube-proxy
+then
+  refresh_opt_in_local_config "conntrack-max-per-core" "0" kube-proxy
+fi
+
+if ! [ -f /proc/sys/net/bridge/bridge-nf-call-iptables ]
+then
+  # NOTE(neoaggelos): https://github.com/canonical/microk8s/issues/3085
+  # Attempt to use modprobe from the host, otherwise fallback to the one
+  # provided with the snap.
+  if /sbin/modprobe br_netfilter || modprobe br_netfilter
+  then
+    echo "Successfully loaded br_netfilter module."
+  else
+    echo "Failed to load br_netfilter. Calico might not work properly."
+  fi
+fi
+
+if [ -f /proc/sys/net/bridge/bridge-nf-call-iptables ] &&
+   grep 0 /proc/sys/net/bridge/bridge-nf-call-iptables
+then
+  echo "1" > /proc/sys/net/bridge/bridge-nf-call-iptables
+fi
+
+declare -a args="($(cat $SNAP_DATA/args/$app))"
+exec "$SNAP/$app" "${args[@]}"

@@ -1,0 +1,155 @@
+#!/usr/bin/env bash
+
+set -eux
+
+source $SNAP/actions/common/utils.sh
+
+if [ -f "${SNAP_DATA}/var/lock/installed.lock" ]
+then
+  exit 0
+fi
+
+use_snap_env
+
+# LXD Specific Checks
+if ! is_strict && cat /proc/1/environ | grep "container=lxc" &> /dev/null
+  then
+
+  # make sure the /dev/kmsg is available, indicating a potential missing profile
+  if [ ! -c "/dev/kmsg" ]  # kmsg is a character device
+  then
+    printf -- '\e[1;31mERROR: \033[0m the lxc profile for MicroK8s might be missing. \n'
+    printf -- '\t  Refer to this help document to get MicroK8s working in with LXD: \n'
+    printf -- '\t  https://microk8s.io/docs/lxd \n'
+    exit 1
+  fi
+fi
+
+cp -r --preserve=mode ${SNAP}/default-args ${SNAP_DATA}/args
+mv ${SNAP_DATA}/args/certs.d/localhost__32000 ${SNAP_DATA}/args/certs.d/localhost:32000
+
+SNAP_DATA_CURRENT=`echo "${SNAP_DATA}" | sed -e "s,${SNAP_REVISION},current,"`
+
+# Try to symlink /var/lib/kubelet so that most kubelet device plugins work out of the box.
+if ! [ -e /var/lib/kubelet ] && ln -s $SNAP_COMMON/var/lib/kubelet /var/lib/kubelet; then
+  echo "/var/lib/kubelet linked to $SNAP_COMMON"
+fi
+
+# Try to symlink /var/lib/calico so that the Calico CNI plugin picks up the mtu configuration.
+if ! [ -e /var/lib/calico ]; then
+  if ln -s $SNAP_DATA_CURRENT/var/lib/calico /var/lib/calico; then
+    echo "/var/lib/calico linked to $SNAP_DATA_CURRENT/var/lib/calico"
+  fi
+fi
+
+# Try to symlink standard CNI Kubernetes directories.
+if ! [ -e /etc/cni/net.d ]; then
+  if mkdir -p /etc/cni && ln -s $SNAP_DATA_CURRENT/args/cni-network /etc/cni/net.d; then
+    echo "/etc/cni/net.d linked to $SNAP_DATA_CURRENT/args/cni-network"
+  fi
+fi
+if ! [ -e /opt/cni/bin ]; then
+  if mkdir -p /opt/cni && ln -s $SNAP_DATA_CURRENT/opt/cni/bin /opt/cni/bin; then
+    echo "/opt/cni/bin linked to $SNAP_DATA_CURRENT/opt/cni/bin"
+  fi
+fi
+
+# Create the credentials directory
+mkdir -p ${SNAP_DATA}/credentials
+
+# Create the certificates
+mkdir ${SNAP_DATA}/certs
+# Allow the ability to add external IPs to the csr, by moving the csr.conf.template to SNAP_DATA
+cp ${SNAP}/certs/csr.conf.template ${SNAP_DATA}/certs/csr.conf.template
+
+# Copy initial configuration from well-known paths.
+# This is done prior to any other initialization.
+#
+# The following paths are checked in order for a config file.
+# Only the first file found will be used, the rest will be ignored.
+#
+# - /etc/microk8s.yaml                <-- user-defined config file
+# - $SNAP_USER_COMMON/.microk8s.yaml  <-- user-defined config file, typically in /root/snap/microk8s/common/.microk8s.yaml
+# - $SNAP_COMMON/.microk8s.yaml       <-- user-defined config file, typically in /var/snap/microk8s/common/.microk8s.yaml
+# - $SNAP/microk8s.default.yaml       <-- default config file bundled with the snap
+#
+# If the pre-init step fails, the snap installation will fail, as it is considered to be a user error.
+mkdir -p "${SNAP_COMMON}/etc/launcher"
+for config_file in "/etc/microk8s.yaml" "$SNAP_USER_COMMON/.microk8s.yaml" "$SNAP_COMMON/.microk8s.yaml" "$SNAP/microk8s.default.yaml"; do
+  if [ -f "${config_file}" ]; then
+    echo "Found config file ${config_file}, will use to initialize cluster."
+
+    if cp "${config_file}" "${SNAP_COMMON}/etc/launcher/install.yaml"; then
+      "${SNAP}/bin/cluster-agent" init --pre-init --config-file "${SNAP_COMMON}/etc/launcher/install.yaml"
+      break
+    fi
+  fi
+done
+
+# Side-load images from well-known paths.
+# This is done prior to any other initialization.
+#
+# Any *.tar files that are found in these directories will be loaded into containerd after it starts.
+#
+# - $SNAP_USER_COMMON/sideload/*.tar  <-- typically /root/snap/microk8s/common/sideload/images.tar
+# - $SNAP_COMMON/sideload/*.tar       <-- typically /var/snap/microk8s/common/sideload/images.tar
+# - $SNAP/sideload/*.tar              <-- typically empty, reserved for future use-cases
+mkdir -p "${SNAP_COMMON}/etc/sideload"
+for source_dir in "${SNAP_USER_COMMON}" "${SNAP_COMMON}" "${SNAP}"; do
+  cp "${source_dir}/sideload/"*.tar "${SNAP_COMMON}/etc/sideload/" || true
+done
+
+# Produce cluster certificates
+produce_certs
+rm -rf .srl
+
+create_user_certs_and_configs
+
+# Install default-hooks
+cp -r --preserve=mode ${SNAP}/default-hooks ${SNAP_COMMON}/hooks
+
+for dir in ${SNAP_DATA}/credentials/ ${SNAP_DATA}/certs/ ${SNAP_DATA}/args/ ${SNAP_COMMON}/hooks
+do
+  chmod -R ug+rwX ${dir}
+  chmod -R o-rwX ${dir}
+done
+
+if is_strict && snapctl is-connected k8s-kubelet
+then
+  snapctl restart microk8s.daemon-containerd
+fi
+
+init_cluster
+
+mkdir -p "${SNAP_DATA}/var/lock"
+set_service_not_expected_to_start etcd
+set_service_not_expected_to_start flanneld
+set_service_not_expected_to_start apiserver-proxy
+
+touch "${SNAP_DATA}/var/lock/ha-cluster"
+touch "${SNAP_DATA}/var/lock/lite.lock"
+
+RESOURCES="${SNAP}/upgrade-scripts/000-switch-to-calico/resources"
+BACKUP_DIR="${SNAP_DATA}/var/tmp/upgrades/000-switch-to-calico"
+
+mkdir -p "${BACKUP_DIR}"
+
+mkdir -p "${BACKUP_DIR}/args/cni-network/"
+cp "${SNAP_DATA}"/args/cni-network/* "${BACKUP_DIR}/args/cni-network/" 2>/dev/null || true
+rm -rf "${SNAP_DATA}"/args/cni-network/*
+${SNAP}/scripts/generate-cni.sh
+mkdir -p "$SNAP_DATA/opt/cni/bin/"
+cp -R "$SNAP"/opt/cni/bin/* "$SNAP_DATA"/opt/cni/bin/
+
+# Low memory guard. Enable by default when system RAM is less than 512MB.
+MEMORY=`cat /proc/meminfo | grep MemTotal | awk '{ print $2 }'`
+if [ $MEMORY -le 524288 ]
+then
+  touch ${SNAP_DATA}/var/lock/low-memory-guard.lock
+fi
+
+# copy git config
+mkdir -p ${SNAP_DATA}/args/git
+cp ${SNAP}/default-args/git/.gitconfig  ${SNAP_DATA}/args/git/.gitconfig
+
+touch "${SNAP_DATA}/var/lock/installed.lock"

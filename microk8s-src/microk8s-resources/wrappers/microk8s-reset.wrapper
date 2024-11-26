@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+set -eu
+
+. $SNAP/actions/common/utils.sh
+
+use_snap_env
+
+${SNAP}/usr/bin/python3 ${SNAP}/scripts/wrappers/reset.py "${@}"

@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+set -e
+
+source $SNAP/actions/common/utils.sh
+use_snap_env
+
+exit_if_service_not_expected_to_start etcd
+
+if [ -e ${SNAP_DATA}/var/lock/clustered.lock ]
+then
+  echo "etcd will not run on a cluster node"
+  exit 0
+fi
+
+# etcd will not start if the socket already exists.
+if [ -S "${SNAP_DATA}/etcd.socket:2379" ]; then
+  rm "${SNAP_DATA}/etcd.socket:2379"
+fi
+
+ARCH=$(arch)
+
+if ! [ "$ARCH" = "amd64" ]; then
+  export ETCD_UNSUPPORTED_ARCH="$ARCH"
+fi
+
+export DEFAULT_INTERFACE_IP_ADDR="$(get_default_ip)"
+
+# This is really the only way I could find to get the args passed in correctly.
+declare -a args="($(cat $SNAP_DATA/args/etcd))"
+exec "$SNAP/etcd" "${args[@]}"
