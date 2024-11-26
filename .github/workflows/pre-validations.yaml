@@ -34,11 +34,16 @@ jobs:
       - name: List files in the repository
         run: ls ${{ github.workspace }}
 
-      # Step 5: Run the shell script (script.sh)
-      - name: Run script.sh
+      # Step 5: List the current directory and try the copy operation using absolute paths
+      - name: Check working directory and copy file
         run: |
-          cp main_code/scripts/pre-validation/config.sh ./
-          cp main_code/scripts/pre-validation/pre-validation.sh ./
+          echo "Current directory: $(pwd)"
+
+          ls -R main_code
+          
+          cp $(pwd)/main_code/scripts/pre-validation/config.sh ./
+          cp $(pwd)/main_code/scripts/pre-validation/pre-validation.sh ./  
+      
           chmod +x config.sh
           chmod +x pre-validation.sh
           ./pre-validation.sh
