@@ -38,12 +38,13 @@ jobs:
       - name: Check working directory and copy file
         run: |
           echo "Current directory: $(pwd)"
-
-          ls -R main_code
           
-          cp $(pwd)/main_code/scripts/pre-validation/config.sh ./
-          cp $(pwd)/main_code/scripts/pre-validation/pre-validation.sh ./  
-      
+          echo "Listing contents of main_code directory (absolute path):"
+          ls -R /home/runner/work/Experiment/Experiment/main_code
+          
+          cp /home/runner/work/Experiment/Experiment/main_code/scripts/pre-validation/config.sh ./
+          cp /home/runner/work/Experiment/Experiment/main_code/scripts/pre-validation/pre-validation.sh ./  
+          
           chmod +x config.sh
           chmod +x pre-validation.sh
           ./pre-validation.sh
