@@ -37,8 +37,8 @@ jobs:
       # Step 5: Run the shell script (script.sh)
       - name: Run script.sh
         run: |
-          cp main_code/scripts/pre-validations/config.sh ./
-          cp main_code/scripts/pre-validations/pre-validation.sh ./
+          cp main_code/scripts/pre-validation/config.sh ./
+          cp main_code/scripts/pre-validation/pre-validation.sh ./
           chmod +x config.sh
           chmod +x pre-validation.sh
           ./pre-validation.sh
