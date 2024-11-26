@@ -18,6 +18,11 @@ jobs:
         with:
           ref: main
           path: main_code
+
+      - name: List contents of main_code directory for debugging
+        run: |
+          echo "Listing contents of main_code:"
+          ls -R main_code  # List contents of the 'main_code' directory to verify file path
       
       # Step 2: Checkout the branch repository.
       - name: Checkout to Microk8s Branch
