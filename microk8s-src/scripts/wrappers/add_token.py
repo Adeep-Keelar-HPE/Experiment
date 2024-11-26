@@ -6,7 +6,7 @@ import time
 import argparse
 import subprocess
 
-from common.cluster.utils import is_node_running_dqlite, TOKEN_ΜΙΝ_LEN
+from common.cluster.utils import is_node_running_dqlite
 
 try:
     from secrets import token_hex
@@ -120,10 +120,10 @@ def print_yaml(token, check):
 
 def print_short(token, check):
     default_ip, all_ips, port = get_network_info()
+
     print(f"microk8s join {default_ip}:{port}/{token}/{check}")
     for ip in all_ips:
-        if ip != default_ip:
-            print(f"microk8s join {ip}:{port}/{token}/{check}")
+        print(f"microk8s join {ip}:{port}/{token}/{check}")
 
 
 if __name__ == "__main__":
@@ -165,7 +165,7 @@ if __name__ == "__main__":
     else:
         token = token_hex(16)
 
-    if len(token) < TOKEN_ΜΙΝ_LEN:
+    if len(token) < 32:
         print("Invalid token size.  It must be 32 characters long.")
         exit(1)
 

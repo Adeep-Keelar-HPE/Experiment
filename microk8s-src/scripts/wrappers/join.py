@@ -23,7 +23,6 @@ from common.cluster.utils import (
     get_cluster_agent_port,
     get_cluster_cidr,
     get_token,
-    get_valid_connection_parts,
     is_low_memory_guard_enabled,
     is_node_running_dqlite,
     is_token_auth_enabled,
@@ -35,8 +34,6 @@ from common.cluster.utils import (
     try_set_file_permissions,
     snap,
     snap_data,
-    FINGERPRINT_MIN_LEN,
-    InvalidConnectionError,
 )
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -55,6 +52,8 @@ cluster_dir = "{}/var/kubernetes/backend".format(snapdata_path)
 cluster_backup_dir = "{}/var/kubernetes/backend.backup".format(snapdata_path)
 cluster_cert_file = "{}/cluster.crt".format(cluster_dir)
 cluster_key_file = "{}/cluster.key".format(cluster_dir)
+
+FINGERPRINT_MIN_LEN = 12
 
 
 def get_traefik_port():
@@ -313,7 +312,7 @@ def create_kubeconfig(token, ca, master_ip, api_port, filename, user):
         try_set_file_permissions(config)
 
 
-def update_kubeproxy(token, ca, master_ip, api_port):
+def update_kubeproxy(token, ca, master_ip, api_port, hostname_override):
     """
     Configure the kube-proxy
 
@@ -321,14 +320,16 @@ def update_kubeproxy(token, ca, master_ip, api_port):
     :param ca: the ca
     :param master_ip: the master node IP
     :param api_port: the API server port
+    :param hostname_override: the hostname override in case the hostname is not resolvable
     """
     create_kubeconfig(token, ca, master_ip, api_port, "proxy.config", "kubeproxy")
     set_arg("--master", None, "kube-proxy")
-    set_arg("--hostname-override", None, "kube-proxy")
+    if hostname_override:
+        set_arg("--hostname-override", hostname_override, "kube-proxy")
     service("restart", "proxy")
 
 
-def update_cert_auth_kubeproxy(token, master_ip, master_port):
+def update_cert_auth_kubeproxy(token, master_ip, master_port, hostname_override):
     """
     Configure the kube-proxy
 
@@ -336,11 +337,13 @@ def update_cert_auth_kubeproxy(token, master_ip, master_port):
     :param ca: the ca
     :param master_ip: the master node IP
     :param master_port: the master node port where the cluster agent listens
+    :param hostname_override: the hostname override in case the hostname is not resolvable
     """
     proxy_token = "{}-proxy".format(token)
     get_client_cert(master_ip, master_port, "proxy", proxy_token, "/CN=system:kube-proxy", False)
     set_arg("--master", None, "kube-proxy")
-    set_arg("--hostname-override", None, "kube-proxy")
+    if hostname_override:
+        set_arg("--hostname-override", hostname_override, "kube-proxy")
 
 
 def update_kubeproxy_cidr(cidr):
@@ -594,13 +597,10 @@ def update_dqlite(cluster_cert, cluster_key, voters, host):
 
     # We get the dqlite port from the already existing deployment
     port = 19001
-    try:
-        with open("{}/info.yaml".format(cluster_backup_dir)) as f:
-            data = yaml.safe_load(f)
-        if "Address" in data:
-            port = data["Address"].rsplit(":")[-1]
-    except OSError:
-        pass
+    with open("{}/info.yaml".format(cluster_backup_dir)) as f:
+        data = yaml.safe_load(f)
+    if "Address" in data:
+        port = data["Address"].rsplit(":")[-1]
 
     # If host is an IPv6 address, wrap it in square brackets
     try:
@@ -769,7 +769,7 @@ def join_dqlite_worker_node(info, master_ip, master_port, token):
     store_base_kubelet_args(info["kubelet_args"])
     update_kubelet_node_ip(info["kubelet_args"], hostname_override)
     update_kubelet_hostname_override(info["kubelet_args"])
-    update_cert_auth_kubeproxy(token, master_ip, master_port)
+    update_cert_auth_kubeproxy(token, master_ip, master_port, hostname_override)
     update_cert_auth_kubelet(token, master_ip, master_port)
     subprocess.check_call(
         [f"{snap()}/actions/common/utils.sh", "create_worker_kubeconfigs"],
@@ -891,10 +891,12 @@ def join_etcd(connection_parts, verify=True):
     update_flannel(info["etcd"], master_ip, master_port, token)
 
     if api_authn_mode == "Token":
-        update_kubeproxy(info["kubeproxy"], info["ca"], master_ip, info["apiport"])
+        update_kubeproxy(
+            info["kubeproxy"], info["ca"], master_ip, info["apiport"], hostname_override
+        )
         update_kubelet(info["kubelet"], info["ca"], master_ip, info["apiport"])
     elif api_authn_mode == "Cert":
-        update_cert_auth_kubeproxy(info["kubeproxy"], master_ip, master_port)
+        update_cert_auth_kubeproxy(info["kubeproxy"], master_ip, master_port, hostname_override)
         update_cert_auth_kubelet(info["kubelet"], master_ip, master_port)
         subprocess.check_call(
             [
@@ -973,12 +975,7 @@ def join(connection, worker, skip_verify, disable_low_memory_guard):
 
     CONNECTION: the cluster connection endpoint in format <master>:<port>/<token>
     """
-    try:
-        connection_parts = get_valid_connection_parts(connection)
-    except InvalidConnectionError as err:
-        print("Invalid connection:", err)
-        sys.exit(1)
-
+    connection_parts = connection.split("/")
     verify = not skip_verify
 
     if is_low_memory_guard_enabled() and disable_low_memory_guard:

@@ -125,20 +125,6 @@ then
   fi
 fi
 
-if ! is_strict &&
-   (systemctl show snap.microk8s.daemon-kubelite.service -p NRestarts | grep -qv "NRestarts=0") &&
-   (grep -qv cpuset /sys/fs/cgroup/cgroup.subtree_control) &&
-   [ ! -e /etc/systemd/system/snap.microk8s.daemon-kubelite.service.d/delegate.conf ]
-then
-  mkdir -p /etc/systemd/system/snap.microk8s.daemon-kubelite.service.d
-  tee /etc/systemd/system/snap.microk8s.daemon-kubelite.service.d/delegate.conf > /dev/null <<EOF
-[Service]
-Delegate=yes
-EOF
-  systemctl daemon-reload || true
-  snap restart microk8s || true
-fi
-
 # wait for containerd socket
 if grep -e "--address " $SNAP_DATA/args/containerd &> /dev/null
 then
@@ -204,19 +190,6 @@ then
   fi
 fi
 
-# kube-proxy reads some values related to the 'nf_conntrack' kernel
-# module from procfs on startup, so we must ensure it is loaded:
-if ! [ -f /proc/sys/net/netfilter/nf_conntrack_max ]
-then
-  if /sbin/modprobe nf_conntrack || modprobe nf_conntrack
-  then
-    echo "Successfully loaded nf_conntrack module."
-  else
-    echo -n "Failed to load nf_conntrack kernel module. "
-    echo "ProxyServer will fail to start until it's loaded."
-  fi
-fi
-
 # on lxc containers do not try to change the conntrack configuration
 # see https://github.com/canonical/microk8s/issues/1438
 if grep -E lxc /proc/1/environ &&
@@ -243,6 +216,12 @@ if [ -f /proc/sys/net/bridge/bridge-nf-call-iptables ] &&
 then
   echo "1" > /proc/sys/net/bridge/bridge-nf-call-iptables
 fi
+
+set -a
+if [ -e "${SNAP_DATA}/args/fips-env" ]; then
+  . "${SNAP_DATA}/args/fips-env"
+fi
+set +a
 
 declare -a args="($(cat $SNAP_DATA/args/$app))"
 exec "$SNAP/$app" "${args[@]}"

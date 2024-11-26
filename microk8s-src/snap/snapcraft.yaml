@@ -21,8 +21,9 @@ environment:
 parts:
   build-deps:
     plugin: nil
-    build-snaps:
-      - go/1.21/stable
+    override-build: |
+      snap install go --classic --channel 1.21-fips/stable
+      snap refresh go --channel 1.21-fips/stable
     build-packages:
       - autoconf
       - automake
@@ -49,12 +50,14 @@ parts:
 
   k8s-dqlite:
     after: [build-deps]
+    build-attributes: [no-patchelf]
     source: build-scripts/components/k8s-dqlite
     plugin: nil
     override-build: $SNAPCRAFT_PROJECT_DIR/build-scripts/build-component.sh k8s-dqlite
 
   etcd:
     after: [build-deps]
+    build-attributes: [no-patchelf]
     plugin: nil
     source: build-scripts/components/etcd
     override-build: $SNAPCRAFT_PROJECT_DIR/build-scripts/build-component.sh etcd
@@ -73,12 +76,14 @@ parts:
 
   flanneld:
     after: [build-deps]
+    build-attributes: [no-patchelf]
     plugin: nil
     source: build-scripts/components/flanneld
     override-build: $SNAPCRAFT_PROJECT_DIR/build-scripts/build-component.sh flanneld
 
   kubernetes:
     after: [build-deps]
+    build-attributes: [no-patchelf]
     plugin: nil
     source: build-scripts/components/kubernetes
     override-build: $SNAPCRAFT_PROJECT_DIR/build-scripts/build-component.sh kubernetes
@@ -90,6 +95,7 @@ parts:
 
   helm:
     after: [build-deps]
+    build-attributes: [no-patchelf]
     plugin: nil
     source: build-scripts/components/helm
     override-build: $SNAPCRAFT_PROJECT_DIR/build-scripts/build-component.sh helm
@@ -200,6 +206,7 @@ parts:
 
   cluster-agent:
     after: [build-deps]
+    build-attributes: [no-patchelf]
     plugin: nil
     source: build-scripts/components/cluster-agent
     override-build: $SNAPCRAFT_PROJECT_DIR/build-scripts/build-component.sh cluster-agent
