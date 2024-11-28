@@ -1,0 +1,20 @@
+name: Test Pre-Validations
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: 'Test Pre-Validations'
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          ref: main
+
+      - name: Run Script on Branch
+        run: |
+          echo "Running Pre-Validation"
+          ./scripts/pre-validation/pre-validation.sh
+
+      - run: echo "🍏 This job's status is ${{ job.status }}."
