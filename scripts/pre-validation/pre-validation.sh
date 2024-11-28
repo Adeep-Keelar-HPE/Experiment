@@ -10,7 +10,7 @@
 # 5. Check if the GO-FIPS Variable, LD_LIBRARY PATH, and OpenSSL Variables are properly set and updated.
 
 # Setting up the configuration file for the pre-validation scripts.
-source ./config.sh
+source $(pwd)/scripts/pre-validation/config.sh
 
 # Exit the script upon the failure. 
 set -e 
