@@ -40,7 +40,7 @@ check_necessary_tools() {
 # Function to clone the repository (with necessary branch) to enable script to run smoothly.
 setup_repository() {
     # Clone the repository with necessary branch.
-    git clone --branch microk8s-1.29 git@github.com:Adeep-Keelar-HPE/Experiment.git
+    git clone --branch microk8s-1.29 https://github.com/Adeep-Keelar-HPE/Experiment.git
 }
 
 # Function to clean up the repository in case of any errors.
