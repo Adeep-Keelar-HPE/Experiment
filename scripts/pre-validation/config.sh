@@ -3,7 +3,10 @@
 # This is the configuration file for the pre-validation scripts.
 # All of the hard-coded values and settings are present in this file.
 
-KUBERNETES_PACKAGE="microk8s-src"
+# Define the base-directory path.
+BASE_DIR=$(pwd)
+
+KUBERNETES_PACKAGE="${BASE_DIR}/microk8s-src"
 KUBERNETES_VERSION_PATH="${PWD}/${KUBERNETES_PACKAGE}/build-scripts/components/kubernetes/version.sh"
 SNAP_YAML_PATH="${PWD}/${KUBERNETES_PACKAGE}/snap/snapcraft.yaml"
 CONTAINERD_TOML_FILE="${PWD}/${KUBERNETES_PACKAGE}/${KUBERNETES_PACKAGE}-resources/default-args/containerd-template.toml"
