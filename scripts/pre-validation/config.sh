@@ -3,12 +3,15 @@
 # This is the configuration file for the pre-validation scripts.
 # All of the hard-coded values and settings are present in this file.
 
+BASE_PATH=$(pwd)
+SRC_PATH="$BASE_PATH/Experiment"
+
 KUBERNETES_PACKAGE="microk8s-src"
-KUBERNETES_VERSION_PATH="${PWD}/${KUBERNETES_PACKAGE}/build-scripts/components/kubernetes/version.sh"
-SNAP_YAML_PATH="${PWD}/${KUBERNETES_PACKAGE}/snap/snapcraft.yaml"
-CONTAINERD_TOML_FILE="${PWD}/${KUBERNETES_PACKAGE}/${KUBERNETES_PACKAGE}-resources/default-args/containerd-template.toml"
-IMAGES_LIST_FILE="${PWD}/${KUBERNETES_PACKAGE}/build-scripts/images.txt"
-FIPS_ENV_FILE="${PWD}/${KUBERNETES_PACKAGE}/${KUBERNETES_PACKAGE}-resources/default-args/fips-env"
+KUBERNETES_VERSION_PATH="${SRC_PATH}/${KUBERNETES_PACKAGE}/build-scripts/components/kubernetes/version.sh"
+SNAP_YAML_PATH="${SRC_PATH}/${KUBERNETES_PACKAGE}/snap/snapcraft.yaml"
+CONTAINERD_TOML_FILE="${SRC_PATH}/${KUBERNETES_PACKAGE}/microk8s-resources/default-args/containerd-template.toml"
+IMAGES_LIST_FILE="${SRC_PATH}/${KUBERNETES_PACKAGE}/build-scripts/images.txt"
+FIPS_ENV_FILE="${SRC_PATH}/${KUBERNETES_PACKAGE}/microk8s-resources/default-args/fips-env"
 
 KUBERNETES_VERSION="1.29.10" # Don't forget to change it here for every update.
 DEFAULT_PYTHON_VERSION="3.8" # Change this when the Python Version is Updated in the future builds (legit for 1.30, 1.31)
