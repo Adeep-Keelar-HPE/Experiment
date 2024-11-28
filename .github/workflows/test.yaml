@@ -7,14 +7,28 @@ jobs:
     name: 'Test Pre-Validations'
     runs-on: ubuntu-20.04
     steps:
-      - name: Checkout Code
+      - name: Checkout Branch Src Code
+        uses: actions/checkout@v3
+        with:
+          ref: microk8s-1.29
+          
+      - name: Checkout Main Code
         uses: actions/checkout@v3
         with:
           ref: main
+          path: main-line
+
+      - name: List the Directory Contents
+        run: |
+          ls -R
+        
 
       - name: Run Script on Branch
         run: |
           echo "Running Pre-Validation"
-          ./scripts/pre-validation/pre-validation.sh
+          cd main-line/scripts/pre-validation
+          chmod +x config.sh
+          chmod +x pre-validation.sh
+          ./pre-validation.sh
 
       - run: echo "🍏 This job's status is ${{ job.status }}."
