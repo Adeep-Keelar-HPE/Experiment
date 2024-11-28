@@ -12,11 +12,6 @@ jobs:
         with:
           ref: microk8s-1.29
           
-      - name: Checkout Main Code
-        uses: actions/checkout@v3
-        with:
-          ref: main
-          path: main-line
 
       - name: List the Directory Contents
         run: |
@@ -26,7 +21,7 @@ jobs:
       - name: Run Script on Branch
         run: |
           echo "Running Pre-Validation"
-          cd main-line/scripts/pre-validation
+          cd ./scripts/pre-validation
           chmod +x config.sh
           chmod +x pre-validation.sh
           ./pre-validation.sh
