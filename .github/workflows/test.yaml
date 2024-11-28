@@ -20,8 +20,9 @@ jobs:
       - name: Run Script on Branch
         run: |
           echo "Running Pre-Validation"
-          chmod +x ./scripts/pre-validation/config.sh
-          chmod +x ./scripts/pre-validation/pre-validation.sh
-          ./scripts/pre-validation/pre-validation.sh
+          cd ./scripts/pre-validation
+          chmod +x config.sh
+          chmod +x pre-validation.sh
+          ./pre-validation.sh
 
       - run: echo "🍏 This job's status is ${{ job.status }}."
