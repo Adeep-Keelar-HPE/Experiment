@@ -19,6 +19,16 @@ set -e
 # Exit if any fails in case the script is used in a pipeline.
 set -euo pipefail
 
+# Adding the user-argument check for the branch name.
+if [ $# -eq 0 ]; then
+    echo "No branch name is provided..."
+    echo "$0 <branch_name>"
+    exit 1
+fi
+
+# Capture the branch name.
+branch_arg="$1"
+
 # 0 Function to exit the script. 
 exit_with_message() {
     local message="$1"
@@ -40,8 +50,10 @@ check_necessary_tools() {
 
 # Function to clone the repository (with necessary branch) to enable script to run smoothly.
 setup_repository() {
+    # Capture the passed argument for the function
+    local branch_name="$1"
     # Clone the repository with necessary branch.
-    git clone --branch microk8s-1.29 https://github.com/Adeep-Keelar-HPE/Experiment.git
+    git clone --branch "$branch_name" https://github.com/Adeep-Keelar-HPE/Experiment.git
 }
 
 # Function to clean up the repository in case of any errors.
@@ -225,7 +237,7 @@ main() {
 
     check_necessary_tools
     read_enhance
-    setup_repository
+    setup_repository "$branch_arg"
     read_enhance
     checking_kube_track
     read_enhance
