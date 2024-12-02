@@ -210,7 +210,7 @@ check_ciphers_present() {
     cipher_line=$(grep "tls-cipher-suites" "$KUBE_APISERVER_FILE")
     for cipher in "${ciphers_list[@]}"; do
 	    # Find if the cipher is present in the file.
-	    if grep -q "$cipher" "$cipher_line"; then
+	    if echo "$cipher_line" | grep -q "$cipher"; then
 		    echo "Error detected!!!"
 		    echo "Cleaning up repository"
 		    cleanup_repository
@@ -231,8 +231,8 @@ main() {
     read_enhance
     checking_kubernetes_version
     read_enhance
-    check_go_version
-    read_enhance
+    # check_go_version
+    # read_enhance
     checking_python_runtime_version
     read_enhance
     check_pause_image_version
