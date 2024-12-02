@@ -210,7 +210,7 @@ check_ciphers_present() {
     cipher_line=$(grep -- "tls-cipher-suites" "$KUBE_APISERVER_FILE")
     for cipher in "${ciphers_list[@]}"; do
 	    # Find if the cipher is present in the file.
-	    if [[ grep -q "$cipher" "$cipher_line" ]]; then
+	    if grep -q "$cipher" "$cipher_line"; then
 		    echo "Error detected!!!"
 		    echo "Cleaning up repository"
 		    cleanup_repository
