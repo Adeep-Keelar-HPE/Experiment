@@ -207,7 +207,7 @@ check_ciphers_present() {
     # Two of the ciphers TLS_RSA_WITH_3DES_EDE_CBC_SHA TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA are not to be present in the kube-apiserver YAML. 
     # These two ciphers must be checked.
     ciphers_list=("TLS_RSA_WITH_3DES_EDE_CBC_SHA" "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA")
-    cipher_line=$(grep -- "tls-cipher-suites" "$KUBE_APISERVER_FILE")
+    cipher_line=$(grep "tls-cipher-suites" "$KUBE_APISERVER_FILE")
     for cipher in "${ciphers_list[@]}"; do
 	    # Find if the cipher is present in the file.
 	    if grep -q "$cipher" "$cipher_line"; then
