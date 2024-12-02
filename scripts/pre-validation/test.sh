@@ -8,6 +8,7 @@
 # 3. Checking if the appropriate Golang Version is set in the snapcraft.yaml file, and checking if the Go version is present in the snap packages.
 # 4. Checking if the appropriate Pause Image version is updated in the containerd.toml file and images.txt for build scripts.
 # 5. Check if the GO-FIPS Variable, LD_LIBRARY PATH, and OpenSSL Variables are properly set and updated.
+# 6. Check if two ciphers which are supposed to be removed are present or not.
 
 # Setting up the configuration file for the pre-validation scripts.
 source $(pwd)/config.sh
@@ -201,6 +202,24 @@ check_required_variables() {
     echo "All variables are set correctly and not commented out."
 }
 
+# 6. Check if two ciphers which are supposed to be removed are present or not.
+check_ciphers_present() {
+    # Two of the ciphers TLS_RSA_WITH_3DES_EDE_CBC_SHA TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA are not to be present in the kube-apiserver YAML. 
+    # These two ciphers must be checked.
+    ciphers_list=("TLS_RSA_WITH_3DES_EDE_CBC_SHA" "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA")
+    cipher_line=$(grep -- "tls-cipher-suites" "$KUBE_APISERVER_FILE")
+    for cipher in "${ciphers_list[@]}"; do
+	    # Find if the cipher is present in the file.
+	    if [[ grep -q "$cipher" "$cipher_line" ]]; then
+		    echo "Error detected!!!"
+		    echo "Cleaning up repository"
+		    cleanup_repository
+		    exit_with_message "The $cipher is present in the $KUBE_APISERVER_FILE. Please remove the cipher..."
+	    fi
+    done
+    echo "The ciphers are not present, the check has cleared..."
+}
+
 main() {
     # Calling all the functions to perform the pre-validation checks.
 
@@ -218,6 +237,8 @@ main() {
     read_enhance
     check_pause_image_version
     check_required_variables
+    read_enhance
+    check_ciphers_present
     read_enhance
     echo "All the pre-validation checks are successful..."
     echo "Cleaning up the repository..."
