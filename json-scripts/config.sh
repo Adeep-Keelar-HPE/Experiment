@@ -4,7 +4,10 @@
 # All of the hard-coded values and settings are present in this file.
 
 BASE_PATH=$(pwd)
-SRC_PATH="$BASE_PATH/Experiment"
+KUBERNETES_FLAVOR="microk8s"
+SRC_PATH="$BASE_PATH/$KUBERNETES_FLAVOR"
+REPO_LINK="git@github.com:glcp/microk8s.git"
+REPO_NAME=$(basename $REPO_LINK .git)
 
 INFO_JSON="info.json"
 KUBERNETES_PACKAGE="microk8s-src"
@@ -14,6 +17,12 @@ CONTAINERD_TOML_FILE="${SRC_PATH}/${KUBERNETES_PACKAGE}/microk8s-resources/defau
 IMAGES_LIST_FILE="${SRC_PATH}/${KUBERNETES_PACKAGE}/build-scripts/images.txt"
 FIPS_ENV_FILE="${SRC_PATH}/${KUBERNETES_PACKAGE}/microk8s-resources/default-args/fips-env"
 KUBE_APISERVER_FILE="${SRC_PATH}/${KUBERNETES_PACKAGE}/microk8s-resources/default-args/kube-apiserver"
+
+# COMPONENTS VERSIONS FILE-PATHS
+MICROK8S_HELM_PATH="${SRC_PATH}/${KUBERNETES_PACKAGE}/build-scripts/components/helm/version.sh"
+MICROK8S_DQLITE_PATH="${SRC_PATH}/${KUBERNETES_PACKAGE}/build-scripts/components/k8s-dqlite/version.sh"
+MICROK8S_CONTAINERD_PATH="${SRC_PATH}/${KUBERNETES_PACKAGE}/build-scripts/components/containerd/version.sh"
+MICROK8S_ETCD_PATH="${SRC_PATH}/${KUBERNETES_PACKAGE}/build-scripts/components/etcd/version.sh"
 
 # Adding the user-argument check for the Kubernetes Version.
 if [ $# -eq 0 ]; then
@@ -55,6 +64,10 @@ parse_kubernetes_version() {
             export DEFAULT_PYTHON_VERSION=$(jq -e ".\"microk8s_version\".\"$kubernetes_version\".\"Python_Version\"" "$INFO_JSON")
             export PAUSE_IMAGE_VERSION=$(jq -e ".\"microk8s_version\".\"$kubernetes_version\".\"Pause_Image_Version\"" "$INFO_JSON")
             export GO_FIPS_VERSION=$(jq -e ".\"microk8s_version\".\"$kubernetes_version\".\"Go_FIPS_Version\"" "$INFO_JSON")
+            export ETCD_VERSION=$(jq -r ".\"microk8s_version\".\"$kubernetes_version\".\"ETCD_Version\"" "$INFO_JSON")
+            export CONTAINERD_VERSION=$(jq -r ".\"microk8s_version\".\"$kubernetes_version\".\"Containerd_Version\"" "$INFO_JSON")
+            export DQLITE_VERSION=$(jq -r ".\"microk8s_version\".\"$kubernetes_version\".\"K8s_dqlite_Version\"" "$INFO_JSON")
+            export HELM_VERSION=$(jq -r ".\"microk8s_version\".\"$kubernetes_version\".\"Helm_Version\"" "$INFO_JSON")
         else
             echo "Kubernetes Version $minor_version is not present"
             exit 1
@@ -89,4 +102,6 @@ read_enhance() {
 }
 
 check_jq_exists
+read_enhance
 parse_kubernetes_version $Kubernetes_arg
+read_enhance

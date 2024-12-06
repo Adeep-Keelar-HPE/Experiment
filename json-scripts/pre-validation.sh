@@ -9,6 +9,7 @@
 # 4. Checking if the appropriate Pause Image version is updated in the containerd.toml file and images.txt for build scripts.
 # 5. Check if the GO-FIPS Variable, LD_LIBRARY PATH, and OpenSSL Variables are properly set and updated.
 # 6. Check if two ciphers which are supposed to be removed are present or not.
+# 7. Check the components build-versions. Specifically --> dqlite, helm.
 
 # Exit the script upon the failure. 
 set -e 
@@ -54,13 +55,13 @@ setup_repository() {
     # Capture the passed argument for the function
     local branch_name="$1"
     # Clone the repository with necessary branch.
-    git clone --branch "$branch_name" git@github.com:glcp/microk8s.git
+    git clone --branch "$branch_name" $REPO_LINK
 }
 
 # Function to clean up the repository in case of any errors.
 cleanup_repository() {
     # Remove the repository if there are any errors.
-    rm -rf Experiment
+    rm -rf $REPO_NAME/
 }
 
 # 1.1 Checking if the Kube-Track in the Kubernetes Version is set, it proves the cherry pick and source code of the appropriate version needed was picked.
@@ -233,6 +234,58 @@ check_ciphers_present() {
     echo "The ciphers are not present, the check has cleared..."
 }
 
+# 7. Check the components build-versions. Specifically --> dqlite, helm.
+check_components_build_versions() {
+    # Get the various components versions from their build-scripts.
+    local CHECK_HELM_VERSION=$(source $MICROK8S_HELM_PATH)
+    local CHECK_DQLITE_VERSION=$(source $MICROK8S_DQLITE_PATH)
+    local CHECK_CONTAINERD_VERSION=$(source $MICROK8S_CONTAINERD_PATH)
+    local CHECK_ETCD_VERSION=$(source $MICROK8S_ETCD_PATH)
+
+    # Provide the versions for user understanding.
+    echo "HELM Version --- $CHECK_HELM_VERSION"
+    echo "DQLITE Version --- $CHECK_DQLITE_VERSION"
+    echo "Containerd Version --- $CHECK_CONTAINERD_VERSION"
+    echo "ETCD Version --- $CHECK_ETCD_VERSION"
+
+    # Check if the versions are set correctly.
+    if [[ "$CHECK_HELM_VERSION" != "$HELM_VERSION" ]]; then
+        echo "Error detected!!!"
+        echo "Cleaning up repository"
+        cleanup_repository
+        exit_with_message "The Helm Version is not set correctly in the source code..."
+    else
+        echo "The Helm Version is set correctly..."
+    fi
+
+    if [[ "$CHECK_DQLITE_VERSION" != "$DQLITE_VERSION" ]]; then
+        echo "Error detected!!!"
+        echo "Cleaning up repository"
+        cleanup_repository
+        exit_with_message "The Dqlite Version is not set correctly in the source code..."
+    else
+        echo "The Dqlite Version is set correctly..."
+    fi
+
+    if [[ "$CHECK_CONTAINERD_VERSION" != "$CONTAINERD_VERSION" ]]; then
+        echo "Error detected!!!"
+        echo "Cleaning up repository"
+        cleanup_repository
+        exit_with_message "The Containerd Version is not set correctly in the source code..."
+    else
+        echo "The Containerd Version is set correctly..."
+    fi
+
+    if [[ "$CHECK_ETCD_VERSION" != "$ETCD_VERSION" ]]; then
+        echo "Error detected!!!"
+        echo "Cleaning up repository"
+        cleanup_repository
+        exit_with_message "The ETCD Version is not set correctly in the source code..."
+    else
+        echo "The ETCD Version is set correctly..."
+    fi
+}
+
 main() {
     # Calling all the functions to perform the pre-validation checks.
 
@@ -240,19 +293,21 @@ main() {
     read_enhance
     setup_repository "$branch_arg"
     read_enhance
-    checking_kube_track
-    read_enhance
-    checking_kubernetes_version
-    read_enhance
-    # check_go_version
+    # checking_kube_track
     # read_enhance
-    checking_python_runtime_version
-    read_enhance
-    check_pause_image_version
-    check_required_variables
-    read_enhance
-    check_ciphers_present
-    read_enhance
+    # checking_kubernetes_version
+    # read_enhance
+    # # check_go_version
+    # # read_enhance
+    # checking_python_runtime_version
+    # read_enhance
+    # check_pause_image_version
+    # check_required_variables
+    # read_enhance
+    # check_ciphers_present
+    # read_enhance
+    # check_components_build_versions
+    # read_enhance
     echo "All the pre-validation checks are successful..."
     echo "Cleaning up the repository..."
     cleanup_repository

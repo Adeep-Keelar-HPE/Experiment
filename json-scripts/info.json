@@ -7,7 +7,11 @@
             ],
             "Python_Version": 3.8,
             "Pause_Image_Version": 3.9,
-            "Go_FIPS_Version": "1.21-fips"
+            "Go_FIPS_Version": "1.21-fips",
+            "ETCD_Version": "v3.5.5",
+            "K8s_dqlite_Version": "v1.1.11",
+            "Containerd_Version": "v1.6.28",
+            "Helm_Version": "v3.9.1"
         },
         "1.30": {
             "version": [
@@ -15,7 +19,11 @@
             ],
             "Python_Version": 3.8,
             "Pause_Image_Version": 3.9,
-            "Go_FIPS_Version": "1.21-fips"
+            "Go_FIPS_Version": "1.21-fips",
+            "ETCD_Version": "v3.5.5",
+            "K8s_dqlite_Version": "v1.1.11",
+            "Containerd_Version": "v1.6.28",
+            "Helm_Version": "v3.9.1"
         },
         "1.31": {
             "version": [
@@ -23,7 +31,11 @@
             ],
             "Python_Version": 3.8,
             "Pause_Image_Version": 3.9,
-            "Go_FIPS_Version": "1.21-fips"
+            "Go_FIPS_Version": "1.21-fips",
+            "ETCD_Version": "v3.5.5",
+            "K8s_dqlite_Version": "v1.2.0",
+            "Containerd_Version": "v1.6.28",
+            "Helm_Version": "v3.14.4"
         }
     }
 }
