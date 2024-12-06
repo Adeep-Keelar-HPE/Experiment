@@ -7,10 +7,18 @@ on:
         description: 'Branch to run the pre-validations to run'
         required: true
         type: string
+      kubernetes-version:
+        description: 'Kubernetes Version to build the Snap Package of'
+        required: true
+        type: string
   workflow_call:
     inputs:
       branch:
         description: 'Branch to run the pre-validations to run'
+        required: true
+        type: string
+      kubernetes-version:
+        description: 'Kubernetes Version to build the Snap Package of'
         required: true
         type: string
 jobs:
@@ -26,9 +34,9 @@ jobs:
       - name: Run Script on Branch
         run: |
           echo "Running Pre-Validation"
-          cd ./scripts/pre-validation/
+          cd ./json-scripts/pre-validation/
           chmod +x config.sh
-          chmod +x test.sh
-          ./test.sh ${{ inputs.branch }}
+          chmod +x pre-validation.sh
+          ./pre-validation.sh ${{ inputs.branch }} ${{ inputs.kubernetes-version }}
 
       - run: echo "🍏 This job's status is ${{ job.status }}."
