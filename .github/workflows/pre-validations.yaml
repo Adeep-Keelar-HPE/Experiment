@@ -2,48 +2,46 @@ name: Pre-Validation Check
 run-name: ${{ github.actor }} is testing out GitHub Actions
 on:
   workflow_dispatch:
+    inputs:
+          branch:
+            description: 'Branch to run the pre-validations to run'
+            required: true
+            type: string
+          kubernetes-version:
+            description: 'Kubernetes Version to build the Snap Package of'
+            required: true
+            type: string
+  workflow_call:
+    inputs:
+      branch:
+        description: 'Branch to run the pre-validations to run'
+        required: true
+        type: string
+      kubernetes-version:
+        description: 'Kubernetes Version to build the Snap Package of'
+        required: true
+        type: string
 jobs:
   Explore-Github-Actions:
     runs-on: ubuntu-20.04
     steps:
-      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
-      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
-      
       # Step 1: Checkout the repository code
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           ref: main
-          path: main_code
 
-      - name: List contents of main_code directory for debugging
+      # Step 2: Install jq.
+      - name: Install jq
+        run: sudo apt-get install jq
+
+      # Run the Pre-Validation Script.
+      - name: Run Script on Branch
         run: |
-          echo "Listing contents of main_code:"
-          ls -R main_code  # List contents of the 'main_code' directory to verify file path
-      
-      # Step 2: Checkout the branch repository.
-      - name: Checkout to Microk8s Branch
-        uses: actions/checkout@v4
-        with:
-          ref: microk8s-1.29
-
-      # Step 4: List files in the repository
-      - name: List files in the repository
-        run: ls ${{ github.workspace }}
-
-      # Step 5: List the current directory and try the copy operation using absolute paths
-      - name: Check working directory and copy file
-        run: |
-          echo "Current directory: $(pwd)"
-          
-          echo "Listing contents of main_code directory (absolute path):"
-          ls -R /home/runner/work/Experiment/Experiment/main_code
-          
-          cp /home/runner/work/Experiment/Experiment/main_code/scripts/pre-validation/config.sh ./
-          cp /home/runner/work/Experiment/Experiment/main_code/scripts/pre-validation/pre-validation.sh ./  
-          
+          echo "Running Pre-Validation"
+          cd ./json-scripts/
           chmod +x config.sh
           chmod +x pre-validation.sh
-          ./pre-validation.sh
+          ./pre-validation.sh ${{ inputs.branch }} ${{ inputs.kubernetes-version }}
+      
       - run: echo "🍏 This job's status is ${{ job.status }}."
