@@ -1,9 +1,7 @@
 name: Pre-Validation Check
 run-name: ${{ github.actor }} is testing out GitHub Actions
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 jobs:
   Explore-Github-Actions:
     runs-on: ubuntu-20.04
