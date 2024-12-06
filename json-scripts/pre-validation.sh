@@ -54,7 +54,7 @@ setup_repository() {
     # Capture the passed argument for the function
     local branch_name="$1"
     # Clone the repository with necessary branch.
-    git clone --branch "$branch_name" https://github.com/Adeep-Keelar-HPE/Experiment.git
+    git clone --branch "$branch_name" git@github.com:glcp/microk8s.git
 }
 
 # Function to clean up the repository in case of any errors.
