@@ -34,7 +34,7 @@ jobs:
       - name: Run Script on Branch
         run: |
           echo "Running Pre-Validation"
-          cd ./json-scripts/pre-validation/
+          cd ./json-scripts/
           chmod +x config.sh
           chmod +x pre-validation.sh
           ./pre-validation.sh ${{ inputs.branch }} ${{ inputs.kubernetes-version }}
