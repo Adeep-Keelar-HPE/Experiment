@@ -38,7 +38,8 @@ Kubernetes_arg=$1
 check_jq_exists() {
     # Checking if jq is installed and configured in the environment.
     if ! command -v jq &> /dev/null; then
-        exit_with_message "jq is not installed in the environment. Please install jq..." 
+        echo "jq is not installed in the environment. Please install jq..." 
+        exit 1
     else
         echo "jq is installed"
         echo $(jq --version) 

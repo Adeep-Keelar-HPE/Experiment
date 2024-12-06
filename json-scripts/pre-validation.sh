@@ -293,21 +293,21 @@ main() {
     read_enhance
     setup_repository "$branch_arg"
     read_enhance
-    # checking_kube_track
-    # read_enhance
-    # checking_kubernetes_version
-    # read_enhance
-    # # check_go_version
-    # # read_enhance
-    # checking_python_runtime_version
-    # read_enhance
-    # check_pause_image_version
-    # check_required_variables
-    # read_enhance
-    # check_ciphers_present
-    # read_enhance
-    # check_components_build_versions
-    # read_enhance
+    checking_kube_track
+    read_enhance
+    checking_kubernetes_version
+    read_enhance
+    check_go_version
+    read_enhance
+    checking_python_runtime_version
+    read_enhance
+    check_pause_image_version
+    check_required_variables
+    read_enhance
+    check_ciphers_present
+    read_enhance
+    check_components_build_versions
+    read_enhance
     echo "All the pre-validation checks are successful..."
     echo "Cleaning up the repository..."
     cleanup_repository
