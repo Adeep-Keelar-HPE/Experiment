@@ -123,6 +123,8 @@ check_go_version() {
     else
 	    echo "$go_version matches with the version in the Snap Packages"
     fi
+
+    echo "Go Version detected in the JSON --- $GO_FIPS_VERSION" 
     
     if [[ "$go_version" != "$GO_FIPS_VERSION" ]]; then
         echo "Error detected!!!"
