@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+
+set -ex
+
+source $SNAP/actions/common/utils.sh
+
+use_snap_env
+
+# Re-exec outside of apparmor confinement
+if ! is_strict && [ -d /sys/kernel/security/apparmor ]; then
+    status_file=/proc/self/attr/apparmor/current
+    # Fallback for older kernels, check the legacy interfaces
+    # https://www.kernel.org/doc/html/latest/admin-guide/LSM/index.html
+    if [ ! -f $status_file ]; then
+        status_file=/proc/self/attr/current
+    fi
+    if [ "$(cat $status_file)" != "unconfined" ]; then
+        exec aa-exec -p unconfined -- "$0" "$@"
+    fi
+fi
+
+# Why we put the /snap/microk8s/current in the path?
+# containerd-shims need to call runc. They inherit their PATH from containerd.
+# As the snap refreshes runc changes location, eg moves from
+# /snap/microk8s/123/usr/bin/runc to /snap/microk8s/124/usr/runc.
+# containerd-shims need to look for runc in  /snap/microk8s/current/usr/bin/runc
+SNAP_CURRENT=`echo "${SNAP}" | sed -e "s,${SNAP_REVISION},current,"`
+CURRENT_PATH="$SNAP_CURRENT/usr/sbin:$SNAP_CURRENT/usr/bin:$SNAP_CURRENT/sbin:$SNAP_CURRENT/bin"
+export PATH="$CURRENT_PATH:$SNAP/usr/sbin:$SNAP/usr/bin:$SNAP/sbin:$SNAP/bin:$PATH"
+
+if is_strict
+then
+  apparmor_parser -r $SNAP/containerd-profile
+else
+  if [ -d "/etc/apparmor.d" ]; then
+    echo "Using a default profile template"
+    cp ${SNAP}/containerd-profile /etc/apparmor.d/cri-containerd.apparmor.d
+    echo "Reloading AppArmor profiles"
+    if ! service apparmor reload
+    then
+      echo "AppArmor profiles loading failed. AppArmor may be unavailable on this host."
+    fi
+  fi
+fi
+
+app=containerd
+
+
+RUNTIME="runc"
+RUNTIME_TYPE="io.containerd.runc.v1"
+SNAPSHOTTER=$(snapshotter)
+
+if mount -t cgroup2 | grep -q 'type cgroup2'; then
+  RUNTIME_TYPE="io.containerd.runc.v2"
+fi
+
+sed 's@${SNAP}@'"${SNAP}"'@g;s@${SNAP_DATA}@'"${SNAP_DATA}"'@g;s@${SNAPSHOTTER}@'"${SNAPSHOTTER}"'@g;s@${RUNTIME}@'"${RUNTIME}"'@g' $SNAP_DATA/args/containerd-template.toml > $SNAP_DATA/args/containerd.toml
+sed -i 's@${RUNTIME_TYPE}@'"${RUNTIME_TYPE}"'@g' $SNAP_DATA/args/containerd.toml
+
+
+run_flanneld="$(is_service_expected_to_start flanneld)"
+if [ "${run_flanneld}" == "1" ]
+then
+  sed 's@${SNAP}@'"${SNAP}"'@g;s@${SNAP_DATA}@'"${SNAP_DATA}"'@g;s@${SNAP_COMMON}@'"${SNAP_COMMON}"'@g' $SNAP_DATA/args/flannel-template.conflist > $SNAP_DATA/args/cni-network/flannel.conflist
+fi
+
+# clean leftover container state if we just booted
+if (is_strict && is_first_boot_on_strict) || (! is_strict && is_first_boot "${SNAP_COMMON}/run/containerd")
+then
+  rm -rf "${SNAP_COMMON}/run/containerd" || true
+fi
+
+mkdir -p "${SNAP_COMMON}/run/containerd"
+if ! is_strict
+then
+  mark_boot_time "${SNAP_COMMON}/run/containerd"
+fi
+
+# This is really the only way I could find to get the args passed in correctly.
+declare -a args="($(cat $SNAP_DATA/args/$app))"
+set -a
+. "${SNAP_DATA}/args/${app}-env"
+set +a
+
+# check if there is a default route available
+if ! default_route_exists
+then
+  echo "WARNING: No default route exists. MicroK8s might not work properly."
+  echo "Refer to https://microk8s.io/docs for instructions on air-gap deployments."
+fi
+
+# NOTE(neoaggelos): See https://github.com/canonical/microk8s/issues/423 for context
+wait_for_default_route
+
+# Set the path to the Cilium socket correctly for CNI
+export CILIUM_SOCK="${SNAP_DATA}/var/run/cilium/cilium.sock"
+
+exec "$SNAP/bin/$app" "${args[@]}"
