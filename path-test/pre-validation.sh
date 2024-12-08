@@ -250,8 +250,8 @@ main() {
     read_enhance
     checking_kubernetes_version
     read_enhance
-    # check_go_version
-    # read_enhance
+    check_go_version
+    read_enhance
     checking_python_runtime_version
     read_enhance
     check_pause_image_version
