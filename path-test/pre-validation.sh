@@ -125,6 +125,7 @@ check_go_version() {
     fi
 
     echo "Go Version detected in the JSON --- $GO_FIPS_VERSION" 
+    echo " $go_version == $GO_FIPS_VERSION ?? " 
     
     if [[ "$go_version" != "$GO_FIPS_VERSION" ]]; then
         echo "Error detected!!!"
