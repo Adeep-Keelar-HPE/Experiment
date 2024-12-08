@@ -21,7 +21,13 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v3
         with:
+          ref: microk8s-1.30
+
+      - name: Checkout the main repository code
+        uses: actions/checkout@v3
+        with:
           ref: main
+          path: main-src
 
       # Step 2: Install jq.
       - name: Install jq
@@ -31,8 +37,8 @@ jobs:
       - name: Run Script on Branch
         run: |
           echo "Running Pre-Validation"
-          chmod +x ./path-test/config.sh
-          chmod +x ./path-test/pre-validation.sh
-          ./path-test/pre-validation.sh ${{ inputs.kubernetes-version }}
+          chmod +x .main-src/path-test/config.sh
+          chmod +x .main-src/path-test/pre-validation.sh
+          .main-src/path-test/pre-validation.sh ${{ inputs.kubernetes-version }}
       
       - run: echo "🍏 This job's status is ${{ job.status }}."
