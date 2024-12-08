@@ -36,6 +36,10 @@ jobs:
           sudo apt-get install jq
           sudo snap install snapcraft --classic
 
+      # Install Snapcraft
+      - name: Install Snapcraft
+        uses: samuelmeuli/action-snapcraft@v3
+
       # Run the Pre-Validation Script.
       - name: Run Script on Branch
         run: |
