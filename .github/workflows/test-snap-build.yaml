@@ -35,6 +35,7 @@ jobs:
           sudo apt-get update && sudo apt install snapd
           sudo apt-get install jq
           sudo snap install snapcraft --classic
+          sudo apt-get install multipass
 
       # Run the Pre-Validation Script.
       - name: Run Script on Branch
@@ -47,7 +48,7 @@ jobs:
       - name: Build Snap Package.
         run: |
           echo "Building snap package"
-          cd ./microk8s-src/snap/
-          sudo snapcraft
+          cd ./microk8s-src/
+          snapcraft
       
       - run: echo "🍏 This job's status is ${{ job.status }}."
