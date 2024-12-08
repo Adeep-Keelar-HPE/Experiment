@@ -32,9 +32,8 @@ jobs:
       # Step 2: Install snap, snapcraft, jq.
       - name: Install jq
         run: |
-          sudo apt-get update && sudo apt install snapd
+          sudo apt-get update 
           sudo apt-get install jq
-          sudo snap install snapcraft --classic
 
       # Install Snapcraft
       - name: Install Snapcraft
