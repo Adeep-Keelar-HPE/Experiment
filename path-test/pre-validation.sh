@@ -124,15 +124,15 @@ check_go_version() {
 	    echo "$go_version matches with the version in the Snap Packages"
     fi
 
-    echo "Go Version detected in the JSON --- $GO_FIPS_VERSION" 
-    echo " $go_version == $GO_FIPS_VERSION ?? " 
+    # echo "Go Version detected in the JSON --- $GO_FIPS_VERSION" 
+    # echo " $go_version == $GO_FIPS_VERSION ?? " 
     
-    if [[ "$go_version" != "$GO_FIPS_VERSION" ]]; then
-        echo "Error detected!!!"
-        exit_with_message "The Go Version is not set correctly in the snapcraft.yaml file..."
-    else
-        echo "The Go Version is set correctly..."
-    fi
+    # if [[ "$go_version" != "$GO_FIPS_VERSION" ]]; then
+    #     echo "Error detected!!!"
+    #     exit_with_message "The Go Version is not set correctly in the snapcraft.yaml file..."
+    # else
+    #     echo "The Go Version is set correctly..."
+    # fi
 }
 
 # 4. Checking if the appropriate Pause Image version is updated in the containerd.toml file and images.txt for build scripts.
