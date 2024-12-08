@@ -1,4 +1,4 @@
-name: Pre-Validation Check
+name: Test Snap Build Check
 run-name: ${{ github.actor }} is testing out GitHub Actions
 on:
   workflow_dispatch:
@@ -29,9 +29,12 @@ jobs:
           ref: main
           path: main-src
 
-      # Step 2: Install jq.
+      # Step 2: Install snap, snapcraft, jq.
       - name: Install jq
-        run: sudo apt-get install jq
+        run: |
+          sudo apt-get update && sudo apt install snapd
+          sudo apt-get install jq
+          sudo snap install snapcraft --classic
 
       # Run the Pre-Validation Script.
       - name: Run Script on Branch
@@ -45,6 +48,6 @@ jobs:
         run: |
           echo "Building snap package"
           cd ./microk8s-src/snap/
-          snapcraft
+          sudo snapcraft
       
       - run: echo "🍏 This job's status is ${{ job.status }}."
