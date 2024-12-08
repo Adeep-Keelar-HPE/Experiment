@@ -115,6 +115,7 @@ check_go_version() {
 
     # Check if the Go Version is correct.
     local go_version=$(echo $go_snapcraft_version | cut -d "/" -f 1)
+    echo "Detected Go Version -- $go_version" 
     
     if [[ "$go_snap_version" != "$go_version" ]]; then
         echo "Error detected!!!"
