@@ -28,7 +28,7 @@ fi
 kubernetes_arg=$1
 
 # Setting up the configuration file for the pre-validation scripts.
-source $(pwd)/scripts/pre-validation/config.sh $kubernetes_arg
+source $(pwd)/scripts/config.sh $kubernetes_arg
 
 # 0 Function to exit the script. 
 exit_with_message() {
