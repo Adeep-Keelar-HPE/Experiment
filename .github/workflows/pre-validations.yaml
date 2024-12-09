@@ -21,7 +21,7 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v3
         with:
-          ref: microk8s-1.30
+          ref: microk8s-1.30 # Hard-coded reference branch here.
 
       - name: Checkout the main repository code
         uses: actions/checkout@v3
