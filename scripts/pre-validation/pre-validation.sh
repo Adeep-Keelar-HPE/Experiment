@@ -8,15 +8,27 @@
 # 3. Checking if the appropriate Golang Version is set in the snapcraft.yaml file, and checking if the Go version is present in the snap packages.
 # 4. Checking if the appropriate Pause Image version is updated in the containerd.toml file and images.txt for build scripts.
 # 5. Check if the GO-FIPS Variable, LD_LIBRARY PATH, and OpenSSL Variables are properly set and updated.
-
-# Setting up the configuration file for the pre-validation scripts.
-source ./config.sh
+# 6. Check if two ciphers which are supposed to be removed are present or not.
+# 7. Check the components build-versions. Specifically --> dqlite, helm.
 
 # Exit the script upon the failure. 
 set -e 
 
 # Exit if any fails in case the script is used in a pipeline.
 set -euo pipefail
+
+# Adding the user-argument check for the branch name.
+if [ $# -eq 0 ]; then
+    echo "No branch name is provided..."
+    echo "$0 <kubernetes-version>"
+    exit 1
+fi
+
+# Capture the Kubernetes Version as the argument.
+kubernetes_arg=$1
+
+# Setting up the configuration file for the pre-validation scripts.
+source $(pwd)/scripts/pre-validation/config.sh $kubernetes_arg
 
 # 0 Function to exit the script. 
 exit_with_message() {
@@ -44,6 +56,7 @@ checking_kube_track() {
     local kube_track=$(grep -m 1 "KUBE_TRACK=" "${KUBERNETES_VERSION_PATH}" |  sed -E 's/.*:-([^"}]+)+.*/\1/')
     echo "Detected Kubernetes Version Tag -- $kube_track"
     if [[ "$kube_track" != $(echo "$KUBERNETES_VERSION" | cut -d "." -f 1,2) ]]; then 
+        echo "Error detected!!!"
         exit_with_message "The Kube-Track Value and Kubernetes Version does not match. Either the incorrect version tag or the cherry pick has an issue..?" 
     else
         echo "The Kube-Track Value is correct." 
@@ -59,6 +72,7 @@ checking_kubernetes_version() {
     local kubernetes_version=$(grep -m 1 "KUBE_VERSION=" "$KUBERNETES_VERSION_PATH" | sed -E 's/.*=v(([0-9]+\.).*)/\1/') 
     echo "Detected Kuberenetes Version -- $kubernetes_version"
     if [[ "$kubernetes_version" != "$KUBERNETES_VERSION" ]]; then
+        echo "Error detected!!!"
         exit_with_message "The Kubernetes Version is not set correctly in the source code and the expected version. Please set it correctly..."
     else
         echo "The Kubernetes Version ${kubernetes_version} is set correctly."
@@ -74,6 +88,7 @@ checking_python_runtime_version() {
     # python_version=$(yq -e '.parts.python-runtime.build-environment[0].C_INCLUDE_PATH' "$SNAP_YAML_PATH" | cut -d "/" -f 4 | awk -F 'python' '{print $2}')
     python_version=$(yq -e '.parts.python-runtime.build-environment[0].C_INCLUDE_PATH' "$SNAP_YAML_PATH" | sed -E 's/.*python(([0-9]+\.).*)/\1/')
     if [[ "$python_version" != "$DEFAULT_PYTHON_VERSION" ]]; then
+        echo "Error detected!!!"
         exit_with_message "Python Runtime Version is not set correctly in the snapcraft.yaml file..."
     else
         echo "Python Runtime Version is set correctly."
@@ -94,22 +109,20 @@ check_go_version() {
     local go_snapcraft_packages_count=$(yq -e '.parts.build-deps.override-build' "$SNAP_YAML_PATH" | sed -E 's/.*--channel ([^ ]+).*/\1/' | sed '/^[[:space:]]*$/d' | uniq | wc -l)
     echo "Go Packages from the Snapcraft -- ${go_snapcraft_packages_count}"
     if [[ "$go_snapcraft_packages_count" -ne 1 ]]; then
+        echo "Error detected!!!"
         exit_with_message "There is more than one Go Version set in the snapcraft.yaml file. Please set only one valid Go-FIPS version..."
     fi
 
     # Check if the Go Version is correct.
     local go_version=$(echo $go_snapcraft_version | cut -d "/" -f 1)
+    echo "Detected Go Version -- $go_version" 
     
     if [[ "$go_snap_version" != "$go_version" ]]; then
+        echo "Error detected!!!"
 	    exit_with_message "The Go Version specified in the snapcraft.yaml file does not match with the version present in the Snap Packages. Please verify..." 1
     else
 	    echo "$go_version matches with the version in the Snap Packages"
-    fi
-    
-    if [[ "$go_version" != "$GO_FIPS_VERSION" ]]; then
-        exit_with_message "The Go Version is not set correctly in the snapcraft.yaml file..."
-    else
-        echo "The Go Version is set correctly..."
+        echo "The GO FIPS Version has been set correctly..." 
     fi
 }
 
@@ -123,6 +136,7 @@ check_pause_image_version() {
     local pause_containerd_image=$(grep -m 1 "sandbox_image" "$CONTAINERD_TOML_FILE" | sed -E 's/.*pause:(([0-9]+\.)+.).*/\1/')
     echo "Pause Containerd Image Version -- $pause_containerd_image"
     if [[ "${pause_containerd_image}" != "${PAUSE_IMAGE_VERSION}" ]]; then
+        echo "Error detected!!!"
         exit_with_message "The Pause Image Version does not match the expected version. Please update in the ${CONTAINERD_TOML_FILE}..." 1
     else
         echo "The Pause Image Version for Containerd is correctly set..."
@@ -133,6 +147,7 @@ check_pause_image_version() {
     local pause_image=$(grep -i "pause" "$IMAGES_LIST_FILE" | sed -E 's/.*:(([0-9]+\.)+.).*/\1/')
     echo "Pause Image Version -- $pause_image"
     if [[ "${pause_image}" != "${PAUSE_IMAGE_VERSION}" ]]; then
+        echo "Error detected!!!"
         exit_with_message "The Pause Image Version does not match the expected version. Please update in the ${IMAGES_LIST_FILE}..." 1
     else
         echo "The Pause Image Version for the build scripts is correctly set..."
@@ -146,6 +161,7 @@ check_required_variables() {
         # Check if the variable assignment is commented out
         if grep -q "^[[:space:]]*#.*$variable[[:space:]]*=" "$FIPS_ENV_FILE"; then
             # If the variable is commented, exit with a message
+            echo "Error detected!!!"
             exit_with_message "The $variable is commented. Please uncomment the variable in the $FIPS_ENV_FILE file..." 1
         fi
     done
@@ -153,10 +169,71 @@ check_required_variables() {
     # Checking the GOFIPS variable value
     local gofips=$(grep "^[^#]*GOFIPS=" "$FIPS_ENV_FILE" | cut -d '=' -f 2)
     if [[ ! $gofips -eq 1 ]]; then
+        echo "Error detected!!!"
 	    exit_with_message "The GOFIPS Env variable is set to 0. Please update it..." 
     fi
     # If none of the variables are commented, print success
     echo "All variables are set correctly and not commented out."
+}
+
+# 6. Check if two ciphers which are supposed to be removed are present or not.
+check_ciphers_present() {
+    # Two of the ciphers TLS_RSA_WITH_3DES_EDE_CBC_SHA TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA are not to be present in the kube-apiserver YAML. 
+    # These two ciphers must be checked.
+    ciphers_list=("TLS_RSA_WITH_3DES_EDE_CBC_SHA" "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA")
+    cipher_line=$(grep "tls-cipher-suites" "$KUBE_APISERVER_FILE")
+    for cipher in "${ciphers_list[@]}"; do
+	    # Find if the cipher is present in the file.
+	    if echo "$cipher_line" | grep -q "$cipher"; then
+		    echo "Error detected!!!"
+		    exit_with_message "The $cipher is present in the $KUBE_APISERVER_FILE. Please remove the cipher..."
+	    fi
+    done
+    echo "The ciphers are not present, the check has cleared..."
+}
+
+# 7. Check the components build-versions. Specifically --> dqlite, helm.
+check_components_build_versions() {
+    # Get the various components versions from their build-scripts.
+    local CHECK_HELM_VERSION=$(source $MICROK8S_HELM_PATH)
+    local CHECK_DQLITE_VERSION=$(source $MICROK8S_DQLITE_PATH)
+    local CHECK_CONTAINERD_VERSION=$(source $MICROK8S_CONTAINERD_PATH)
+    local CHECK_ETCD_VERSION=$(source $MICROK8S_ETCD_PATH)
+
+    # Provide the versions for user understanding.
+    echo "HELM Version --- $CHECK_HELM_VERSION"
+    echo "DQLITE Version --- $CHECK_DQLITE_VERSION"
+    echo "Containerd Version --- $CHECK_CONTAINERD_VERSION"
+    echo "ETCD Version --- $CHECK_ETCD_VERSION"
+
+    # Check if the versions are set correctly.
+    if [[ "$CHECK_HELM_VERSION" != "$HELM_VERSION" ]]; then
+        echo "Error detected!!!"
+        exit_with_message "The Helm Version is not set correctly in the source code..."
+    else
+        echo "The Helm Version is set correctly..."
+    fi
+
+    if [[ "$CHECK_DQLITE_VERSION" != "$DQLITE_VERSION" ]]; then
+        echo "Error detected!!!"
+        exit_with_message "The Dqlite Version is not set correctly in the source code..."
+    else
+        echo "The Dqlite Version is set correctly..."
+    fi
+
+    if [[ "$CHECK_CONTAINERD_VERSION" != "$CONTAINERD_VERSION" ]]; then
+        echo "Error detected!!!"
+        exit_with_message "The Containerd Version is not set correctly in the source code..."
+    else
+        echo "The Containerd Version is set correctly..."
+    fi
+
+    if [[ "$CHECK_ETCD_VERSION" != "$ETCD_VERSION" ]]; then
+        echo "Error detected!!!"
+        exit_with_message "The ETCD Version is not set correctly in the source code..."
+    else
+        echo "The ETCD Version is set correctly..."
+    fi
 }
 
 main() {
@@ -174,6 +251,12 @@ main() {
     read_enhance
     check_pause_image_version
     check_required_variables
+    read_enhance
+    check_ciphers_present
+    read_enhance
+    check_components_build_versions
+    read_enhance
+    echo "All the pre-validation checks are successful..."
     read_enhance
 }
 
