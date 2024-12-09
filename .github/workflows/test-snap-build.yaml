@@ -41,7 +41,7 @@ jobs:
         run: |
           sudo snap install snapcraft --classic
           cd ./microk8s-src/
-          snapcraft
+          sudo snapcraft
         env:
           SNAPCRAFT_BUILD_ENVIRONMENT: host
       
