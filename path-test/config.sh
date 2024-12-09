@@ -62,7 +62,6 @@ parse_kubernetes_version() {
             export KUBERNETES_VERSION=$minor_version
             export DEFAULT_PYTHON_VERSION=$(jq -r ".\"microk8s_version\".\"$kubernetes_version\".\"Python_Version\"" "$INFO_JSON")
             export PAUSE_IMAGE_VERSION=$(jq -r ".\"microk8s_version\".\"$kubernetes_version\".\"Pause_Image_Version\"" "$INFO_JSON")
-            # export GO_FIPS_VERSION=$(jq -r ".\"microk8s_version\".\"$kubernetes_version\".\"Go_FIPS_Version\"" "$INFO_JSON")
             export ETCD_VERSION=$(jq -r ".\"microk8s_version\".\"$kubernetes_version\".\"ETCD_Version\"" "$INFO_JSON")
             export CONTAINERD_VERSION=$(jq -r ".\"microk8s_version\".\"$kubernetes_version\".\"Containerd_Version\"" "$INFO_JSON")
             export DQLITE_VERSION=$(jq -r ".\"microk8s_version\".\"$kubernetes_version\".\"K8s_dqlite_Version\"" "$INFO_JSON")
