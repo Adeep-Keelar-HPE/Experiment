@@ -29,16 +29,6 @@ jobs:
           ref: main
           path: main-src
 
-      # Step 2: Install snap, snapcraft, jq.
-      - name: Install jq
-        run: |
-          sudo apt-get update 
-          sudo apt-get install jq
-
-      # Install Snapcraft
-      - name: Install Snapcraft
-        uses: samuelmeuli/action-snapcraft@v3
-
       # Run the Pre-Validation Script.
       - name: Run Script on Branch
         run: |
@@ -49,8 +39,10 @@ jobs:
 
       - name: Build Snap Package.
         run: |
-          echo "Building snap package"
+          sudo snap install snapcraft --classic
           cd ./microk8s-src/
           snapcraft
+        env:
+          SNAPCRAFT_BUILD_ENVIRONMENT: host
       
       - run: echo "🍏 This job's status is ${{ job.status }}."
