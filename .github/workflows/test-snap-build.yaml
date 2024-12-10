@@ -29,28 +29,20 @@ jobs:
           ref: main
           path: main-src
 
-      # Step 2: Install snap, snapcraft, jq.
-      - name: Install jq
-        run: |
-          sudo apt-get update 
-          sudo apt-get install jq
-
-      # Install Snapcraft
-      - name: Install Snapcraft
-        uses: samuelmeuli/action-snapcraft@v3
-
       # Run the Pre-Validation Script.
       - name: Run Script on Branch
         run: |
           echo "Running Pre-Validation"
-          chmod +x main-src/path-test/config.sh
-          chmod +x main-src/path-test/pre-validation.sh
-          main-src/path-test/pre-validation.sh ${{ inputs.kubernetes-version }}
+          chmod +x main-src/scripts/config.sh
+          chmod +x main-src/scripts/pre-validation.sh
+          main-src/scripts/pre-validation.sh ${{ inputs.kubernetes-version }}
 
       - name: Build Snap Package.
         run: |
-          echo "Building snap package"
+          sudo snap install snapcraft --classic
           cd ./microk8s-src/
-          snapcraft
+          sudo snapcraft
+        env:
+          SNAPCRAFT_BUILD_ENVIRONMENT: host
       
       - run: echo "🍏 This job's status is ${{ job.status }}."
