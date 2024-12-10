@@ -179,8 +179,10 @@ check_required_variables() {
 # 6. Check if two ciphers which are supposed to be removed are present or not.
 check_ciphers_present() {
     # Two of the ciphers TLS_RSA_WITH_3DES_EDE_CBC_SHA TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA are not to be present in the kube-apiserver YAML. 
+    # Adding few more ciphers to be removed.
+    # TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA
     # These two ciphers must be checked.
-    ciphers_list=("TLS_RSA_WITH_3DES_EDE_CBC_SHA" "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA")
+    ciphers_list=("TLS_RSA_WITH_3DES_EDE_CBC_SHA" "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA" "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA" "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA")
     cipher_line=$(grep "tls-cipher-suites" "$KUBE_APISERVER_FILE")
     for cipher in "${ciphers_list[@]}"; do
 	    # Find if the cipher is present in the file.
