@@ -25,4 +25,9 @@ jobs:
       - name: Install snapd from candidate stable.
         run: |
           sudo snap refresh snapd --channel=latest/stable
-      - run: "Attempting to build the snap package now!!!"
+      - run: echo "Attempting to build the snap package now!!!"
+      - name: Build Snap Package
+        run: |
+          cd ./microk8s-src/ 
+          sg lxd -c 'snapcraft --use-lxd'
+          sudo mv microk8s*.snap microk8s.snap
