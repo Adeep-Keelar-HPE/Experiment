@@ -1,0 +1,28 @@
+name: Build Snap Test
+run-name: ${{ github.actor }} is testing out GitHub Actions
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Snap Package
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          ref: microk8s-1.30 # Hard-coding branch for testing purpose.
+        
+      - name: Install LXD # Install LXD Container to build the snap package.
+        run: |
+          sudo lxd init --auto 
+          sudo usermod --append --groups lxd $USER
+          sg lxd -c 'lxc version'
+      - name: Install snapcraft
+        run: |
+          sudo snap install snapcraft --classic
+      - name: Install snapd from candidate stable.
+        run: |
+          sudo snap refresh snapd --channel=latest/stable
+      - run: "Attempting to build the snap package now!!!"
