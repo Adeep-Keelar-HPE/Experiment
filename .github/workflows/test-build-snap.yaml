@@ -44,9 +44,9 @@ jobs:
       - name: Run Pre-Validation
         run: |
           echo "Running Pre-Validation..."
-          chmod +x main-src/scripts/pre-validation/config.sh
-          chmod +x main-src/scripts/pre-validation/pre-validation.sh
-          main-src/scripts/pre-validation/pre-validation.sh ${{ inputs.kubernetes-version }} ${{ inputs.validation-type }}
+          chmod +x main-src/scripts/config.sh
+          chmod +x main-src/scripts/pre-validation.sh
+          main-src/scripts/pre-validation.sh ${{ inputs.kubernetes-version }} ${{ inputs.validation-type }}
         
       - name: Install LXD # Install LXD Container to build the snap package.
         run: |
