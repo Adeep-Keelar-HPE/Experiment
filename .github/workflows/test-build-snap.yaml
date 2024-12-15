@@ -1,0 +1,66 @@
+name: Build Snap Test
+run-name: ${{ github.actor }} is testing out GitHub Actions
+on:
+  workflow_dispatch:
+    inputs:
+      kubernetes-version:
+        description: 'Kubernetes Version to build the Snap Package of'
+        required: true
+        type: string
+      validation-type:
+        description: 'Type of Validation to run'
+        required: true
+        type: choice
+        options:
+          - pre-repo
+          - post-repo
+  workflow_call:
+    inputs:
+      kubernetes-version:
+        description: 'Kubernetes Version to build the Snap Package of'
+        required: true
+        type: string
+      validation-type:
+        description: 'Type of Validation to run'
+        required: true
+        type: string
+jobs:
+  build:
+    name: Build Snap Package
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          ref: microk8s-1.30 # Hard-coding branch for testing purpose.
+      
+      - name: Checkout main branch
+        uses: actions/checkout@v3
+        with:
+          ref: main-src
+
+      - name: Run Pre-Validation
+        run: |
+          echo "Running Pre-Validation..."
+          chmod +x ./scripts/pre-validation/config.sh
+          chmod +x ./scripts/pre-validation/pre-validation.sh
+          ./scripts/pre-validation/pre-validation.sh ${{ inputs.kubernetes-version }} ${{ inputs.validation-type }}
+        
+      - name: Install LXD # Install LXD Container to build the snap package.
+        run: |
+          sudo lxd init --auto 
+          sudo usermod --append --groups lxd $USER
+          sg lxd -c 'lxc version'
+      - name: Install snapcraft
+        run: |
+          sudo snap install snapcraft --classic
+      - name: Install snapd from candidate stable.
+        run: |
+          sudo snap refresh snapd --channel=latest/stable
+      - run: echo "Attempting to build the snap package now!!!"
+      # - name: Build Snap Package
+      #   run: |
+      #     cd ./microk8s-src/ 
+      #     sg lxd -c 'snapcraft --use-lxd'
+      #     sudo mv microk8s*.snap microk8s.snap
