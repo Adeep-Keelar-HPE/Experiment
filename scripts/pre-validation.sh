@@ -20,15 +20,16 @@ set -euo pipefail
 # Adding the user-argument check for the branch name.
 if [ $# -eq 0 ]; then
     echo "No branch name is provided..."
-    echo "$0 <kubernetes-version>"
+    echo "$0 <kubernetes-version> <action-type>"
     exit 1
 fi
 
 # Capture the Kubernetes Version as the argument.
 kubernetes_arg=$1
+action_type=$2
 
 # Setting up the configuration file for the pre-validation scripts.
-source $(pwd)/scripts/config.sh $kubernetes_arg
+source $(pwd)/scripts/config.sh $kubernetes_arg $action_type
 
 # 0 Function to exit the script. 
 exit_with_message() {

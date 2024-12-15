@@ -7,6 +7,7 @@
 
 # Variables that will be useful.
 OFFICIAL_REPO="https://github.com/canonical/microk8s.git"
+BASE_PATH=$(pwd)
 
 # Helper function to check if the pre-requisites are done.
 function check_prerequisites() {
@@ -26,5 +27,13 @@ function setup_official_repo() {
     git clone $OFFICIAL_REPO
 }
 
+# Function to sync the changes from our repository to the official repository.
+function sync_changes() {
+    # Sync our changes to the official repository. 
+    rsync -av --progress $BASE_PATH/microk8s-src/ $BASE_PATH/microk8s/
+    echo "Completed syncing the changes to the official repository..."
+}
+
 check_prerequisites
 setup_official_repo
+sync_changes
