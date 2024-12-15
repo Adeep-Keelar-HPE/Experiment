@@ -65,8 +65,8 @@ jobs:
         run: |
           sudo snap refresh snapd --channel=latest/stable
       - run: echo "Attempting to build the snap package now!!!"
-      # - name: Build Snap Package
-      #   run: |
-      #     cd ./microk8s-src/ 
-      #     sg lxd -c 'snapcraft --use-lxd'
-      #     sudo mv microk8s*.snap microk8s.snap
+      - name: Build Snap Package
+        run: |
+          cd ./microk8s/ 
+          sg lxd -c 'snapcraft --use-lxd'
+          sudo mv microk8s*.snap microk8s.snap
