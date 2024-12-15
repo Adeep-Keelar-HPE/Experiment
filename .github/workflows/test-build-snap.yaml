@@ -41,6 +41,11 @@ jobs:
           ref: main
           path: main-src
 
+      - name: Set up Proper Repo.
+        run: |
+          chmod +x main-src/scripts/proper-repo-setter.sh
+          main-src/scripts/proper-repo-setter.sh
+
       - name: Run Pre-Validation
         run: |
           echo "Running Pre-Validation..."
