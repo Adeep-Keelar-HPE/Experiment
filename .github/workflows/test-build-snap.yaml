@@ -38,7 +38,8 @@ jobs:
       - name: Checkout main branch
         uses: actions/checkout@v3
         with:
-          ref: main-src
+          ref: main
+          path: main-src
 
       - name: Run Pre-Validation
         run: |
