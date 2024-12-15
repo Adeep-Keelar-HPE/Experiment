@@ -2,18 +2,18 @@ name: Build Snap Test
 run-name: ${{ github.actor }} is testing out GitHub Actions
 on:
   workflow_dispatch:
-  inputs:
-    kubernetes-version:
-      description: 'Kubernetes Version to build the Snap Package of'
-      required: true
-      type: string
-    validation-type:
-      description: 'Type of Validation to run'
-      required: true
-      type: choice
-      options:
-        - pre-repo
-        - post-repo
+    inputs:
+      kubernetes-version:
+        description: 'Kubernetes Version to build the Snap Package of'
+        required: true
+        type: string
+      validation-type:
+        description: 'Type of Validation to run'
+        required: true
+        type: choice
+        options:
+          - pre-repo
+          - post-repo
   workflow_call:
     inputs:
       kubernetes-version:
