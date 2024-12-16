@@ -65,8 +65,15 @@ jobs:
         run: |
           sudo snap refresh snapd --channel=latest/stable
       - run: echo "Attempting to build the snap package now!!!"
-      - name: Build Snap Package
+      # - name: Build Snap Package
+      #   run: |
+      #     cd ./microk8s/ 
+      #     sg lxd -c 'snapcraft --use-lxd'
+      #     sudo mv microk8s*.snap microk8s.snap
+      - name: Generate info.json 
         run: |
-          cd ./microk8s/ 
-          sg lxd -c 'snapcraft --use-lxd'
-          sudo mv microk8s*.snap microk8s.snap
+          chmod +x trial.sh
+          ./trial.sh ${{ inputs.kubernetes-version }}
+      - name: Print file.
+        run: |
+          cat info.json
