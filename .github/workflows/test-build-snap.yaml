@@ -72,8 +72,8 @@ jobs:
       #     sudo mv microk8s*.snap microk8s.snap
       - name: Generate info.json 
         run: |
-          chmod +x trial.sh
-          ./trial.sh ${{ inputs.kubernetes-version }}
+          chmod +x main-src/scripts/package_info_generator/trial.sh
+          main-src/scripts/package_info_generator/trial.sh ${{ inputs.kubernetes-version }}
       - name: Print file.
         run: |
-          cat info.json
+          cat main-src/scripts/package_info_generator/info.json
