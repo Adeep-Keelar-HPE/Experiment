@@ -76,4 +76,4 @@ jobs:
           main-src/scripts/package_info_generator/trial.sh ${{ inputs.kubernetes-version }}
       - name: Print file.
         run: |
-          cat main-src/scripts/package_info_generator/info.json
+          cat info.json
