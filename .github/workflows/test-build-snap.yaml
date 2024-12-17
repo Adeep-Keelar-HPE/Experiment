@@ -57,8 +57,8 @@ jobs:
       # Run this step instead. 
       - name: Move the files from microk8s-src to the base.
         run: |
-          chmod +x main-src/scripts/repo-mover.sh
-          main-src/scripts/repo-mover.sh
+          chmod +x main-src/necessary-scripts/repo-mover.sh
+          main-src/necessary-scripts/repo-mover.sh
         
       - name: Install LXD # Install LXD Container to build the snap package.
         run: |
@@ -78,14 +78,13 @@ jobs:
 
       - name: Build Snap Package
         run: |
-          cd ./microk8s/ 
           sg lxd -c 'snapcraft --use-lxd'
           sudo mv microk8s*.snap microk8s-fips.snap
 
       - name: Generate info.json 
         run: |
-          chmod +x main-src/scripts/package_info_generator/trial.sh
-          main-src/scripts/package_info_generator/trial.sh ${{ inputs.kubernetes-version }}
+          chmod +x main-src/necessary-scripts/package_info_generator/trial.sh
+          main-src/necessary-scripts/package_info_generator/trial.sh ${{ inputs.kubernetes-version }}
           
       - name: Print file.
         run: |
