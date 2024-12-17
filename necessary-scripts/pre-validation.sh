@@ -29,7 +29,7 @@ kubernetes_arg=$1
 action_type=$2
 
 # Setting up the configuration file for the pre-validation scripts.
-source $(pwd)/scripts/config.sh $kubernetes_arg $action_type
+source $(pwd)/necessary-scripts/config.sh $kubernetes_arg $action_type
 
 # 0 Function to exit the script. 
 exit_with_message() {
