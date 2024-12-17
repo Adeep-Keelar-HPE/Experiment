@@ -46,7 +46,7 @@ jobs:
           echo "Running Pre-Validation..."
           chmod +x main-src/necessary-scripts/config.sh
           chmod +x main-src/necessary-scripts/pre-validation.sh
-          main-src/scripts/pre-validation.sh ${{ inputs.kubernetes-version }} ${{ inputs.validation-type }}
+          main-src/necessary-scripts/pre-validation.sh ${{ inputs.kubernetes-version }} ${{ inputs.validation-type }}
 
       # Let us no longer this step. 
       # - name: Set up Proper Repo.
