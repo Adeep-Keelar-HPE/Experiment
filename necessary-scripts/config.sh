@@ -5,7 +5,7 @@
 
 BASE_PATH=$(pwd)
 SOURCE_PATH="$BASE_PATH/microk8s-src"
-SCRIPT_PATH="$BASE_PATH/scripts"
+SCRIPT_PATH="$BASE_PATH/necessary-scripts"
 INFO_JSON="$SCRIPT_PATH/info.json"
 
 
