@@ -41,39 +41,52 @@ jobs:
           ref: main
           path: main-src
 
-      - name: Set up Proper Repo.
-        run: |
-          chmod +x main-src/scripts/proper-repo-setter.sh
-          main-src/scripts/proper-repo-setter.sh
-
       - name: Run Pre-Validation
         run: |
           echo "Running Pre-Validation..."
-          chmod +x main-src/scripts/config.sh
-          chmod +x main-src/scripts/pre-validation.sh
+          chmod +x main-src/necessary-scripts/config.sh
+          chmod +x main-src/necessary-scripts/pre-validation.sh
           main-src/scripts/pre-validation.sh ${{ inputs.kubernetes-version }} ${{ inputs.validation-type }}
+
+      # Let us no longer this step. 
+      # - name: Set up Proper Repo.
+      #   run: |
+      #     chmod +x main-src/scripts/proper-repo-setter.sh
+      #     main-src/scripts/proper-repo-setter.sh
+
+      # Run this step instead. 
+      - name: Move the files from microk8s-src to the base.
+        run: |
+          chmod +x main-src/scripts/repo-mover.sh
+          main-src/scripts/repo-mover.sh
         
       - name: Install LXD # Install LXD Container to build the snap package.
         run: |
           sudo lxd init --auto 
           sudo usermod --append --groups lxd $USER
           sg lxd -c 'lxc version'
+
       - name: Install snapcraft
         run: |
           sudo snap install snapcraft --classic
+
       - name: Install snapd from candidate stable.
         run: |
           sudo snap refresh snapd --channel=latest/stable
+
       - run: echo "Attempting to build the snap package now!!!"
-      # - name: Build Snap Package
-      #   run: |
-      #     cd ./microk8s/ 
-      #     sg lxd -c 'snapcraft --use-lxd'
-      #     sudo mv microk8s*.snap microk8s.snap
+
+      - name: Build Snap Package
+        run: |
+          cd ./microk8s/ 
+          sg lxd -c 'snapcraft --use-lxd'
+          sudo mv microk8s*.snap microk8s-fips.snap
+
       - name: Generate info.json 
         run: |
           chmod +x main-src/scripts/package_info_generator/trial.sh
           main-src/scripts/package_info_generator/trial.sh ${{ inputs.kubernetes-version }}
+          
       - name: Print file.
         run: |
           cat info.json
