@@ -23,11 +23,7 @@ if [ "$Action_type" != "pre-repo" ] && [ "$Action_type" != "post-repo" ]; then
 fi
 
 BASE_PATH=$(pwd)
-if [ "$Action_type" == "pre-repo" ]; then
-    SOURCE_PATH="$BASE_PATH/microk8s-src"
-else
-    SOURCE_PATH="$BASE_PATH/microk8s"
-fi
+SOURCE_PATH="$BASE_PATH/microk8s-src"
 SCRIPT_PATH="$BASE_PATH/necessary-scripts"
 INFO_JSON="$SCRIPT_PATH/info.json"
 
