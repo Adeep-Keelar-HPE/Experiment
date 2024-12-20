@@ -23,12 +23,6 @@ jobs:
         with:
           ref: microk8s-1.30 # Hard-coded reference branch here.
 
-      - name: Checkout the main repository code
-        uses: actions/checkout@v3
-        with:
-          ref: main
-          path: main-src
-
       # Step 2: Install jq.
       - name: Install jq
         run: sudo apt-get install jq
@@ -37,8 +31,8 @@ jobs:
       - name: Run Script on Branch
         run: |
           echo "Running Pre-Validation"
-          chmod +x main-src/scripts/config.sh
-          chmod +x main-src/scripts/pre-validation.sh
-          main-src/scripts/pre-validation.sh ${{ inputs.kubernetes-version }}
+          chmod +x necessary-scripts/config.sh
+          chmod +x necessary-scripts/pre-validation.sh
+          necessary-scripts/pre-validation.sh ${{ inputs.kubernetes-version }}
       
       - run: echo "🍏 This job's status is ${{ job.status }}."
