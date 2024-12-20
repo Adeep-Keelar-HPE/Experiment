@@ -1,3 +1,4 @@
+
 name: Auto Build Snap
 on:
   push:
@@ -25,3 +26,41 @@ jobs:
           chmod +x necessary-scripts/config.sh
           chmod +x necessary-scripts/pre-validation.sh
           necessary-scripts/pre-validation.sh ${{ env.KUBE_VER }}
+
+      - name: Move the files from microk8s-src to the base.
+        run: |
+          chmod +x necessary-scripts/repo-mover.sh
+          necessary-scripts/repo-mover.sh
+
+      - name: Install LXD # Install LXD Container to build the snap package.
+        run: |
+          sudo lxd init --auto 
+          sudo usermod --append --groups lxd $USER
+          sg lxd -c 'lxc version'
+
+      - name: Install snapcraft
+        run: |
+          sudo snap install snapcraft --classic
+
+      - name: Install snapd from candidate stable.
+        run: |
+          sudo snap refresh snapd --channel=latest/stable
+
+      - run: echo "Attempting to build the snap package now!!!"
+      - name: Setup a Snap Package Name for the Microk8s.
+        run: |
+          echo "SNAP_NAME=microk8s-fips-v${{ env.KUBE_VER }}-$(date +'%Y_%m_%d')-${{ github.run_id }}_amd.snap"
+
+      - name: Build Snap Package
+        run: |
+          sg lxd -c 'snapcraft --use-lxd'
+          sudo mv microk8s*.snap ${{ env.SNAP_NAME }}
+
+      - name: Generate info.json
+        run: |
+          chmod +x necessary-scripts/package_info_generator/trial.sh
+          necessary-scripts/package_info_generator/trial.sh ${{ env.KUBE_VER }} ${{ env.SNAP_NAME }}
+
+      - name: View File.
+        run: |
+          cat info.json
