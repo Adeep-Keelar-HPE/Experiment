@@ -18,3 +18,10 @@ jobs:
       - name: Print K8s Version.
         run: |
           echo $KUBE_VER
+
+      - name: Run Pre-Validation.
+        run: |
+          echo "Running Pre-Validation..."
+          chmod +x necessary-scripts/config.sh
+          chmod +x necessary-scripts/pre-validation.sh
+          necessary-scripts/pre-validation.sh ${{ env.KUBE_VER }}
