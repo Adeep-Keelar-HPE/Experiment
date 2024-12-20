@@ -13,7 +13,7 @@ jobs:
 
       - name: Detect K8s Version.
         run: |
-          echo "KUBE_VER=$(echo microk8s-src/build-scripts/components/kubernetes/version.sh | grep -m 1 "KUBE_VERSION=" | sed -E 's/.*=v(([0-9]+\.).*)/\1/')" >> $GITHUB_ENV
+          echo "KUBE_VER=$(cat microk8s-src/build-scripts/components/kubernetes/version.sh | grep -m 1 "KUBE_VERSION=" | sed -E 's/.*=v(([0-9]+\.).*)/\1/')" >> $GITHUB_ENV
 
       - name: Print K8s Version.
         run: |
