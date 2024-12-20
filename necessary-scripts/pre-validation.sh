@@ -20,15 +20,16 @@ set -euo pipefail
 # Adding the user-argument check for the branch name.
 if [ $# -eq 0 ]; then
     echo "No branch name is provided..."
-    echo "$0 <kubernetes-version>"
+    echo "$0 <kubernetes-version> <action-type>"
     exit 1
 fi
 
 # Capture the Kubernetes Version as the argument.
 kubernetes_arg=$1
+action_type=$2
 
 # Setting up the configuration file for the pre-validation scripts.
-source $(pwd)/scripts/config.sh $kubernetes_arg
+source $(pwd)/necessary-scripts/config.sh $kubernetes_arg $action_type
 
 # 0 Function to exit the script. 
 exit_with_message() {
@@ -100,7 +101,7 @@ check_go_version() {
     # The Go Version is set in two places, the snapcraft YAML file and in the snap info list.
     # The tracking section will be covering the latest stable FIPS Version. Only FIPS version will be looked into.
     local go_snap_version=$(snap info go | grep fips | awk 'NR==2 {print $1}' | sed -E 's/([0-9]+\.[0-9]+-fips).*/\1/')
-    echo "Latest version of $go_snap_version"
+    echo "Latest version of Go FIPS from Snap --- $go_snap_version"
     # Find the specified Go Version in the Snapcraft.yaml
 
     # The Go Version is set in the snapcraft.yaml file.
@@ -113,16 +114,26 @@ check_go_version() {
         exit_with_message "There is more than one Go Version set in the snapcraft.yaml file. Please set only one valid Go-FIPS version..."
     fi
 
+    # Check the Go Version mentioned in the info.json
+    kubernetes_version_major=$(echo $kubernetes_arg | cut -d '.' -f 1,2)
+    version=$(jq -r ".\"microk8s_version\".\"$kubernetes_version_major\".\"Go_Version\"" "$INFO_JSON")
+    go_version=$(echo $go_snapcraft_version | cut -d "/" -f 1)
+    if [[ "$version" != "$go_version" ]]; then
+        echo "Error detected!!!"
+        exit_with_message "The Go Version specified for the version in info.json is not matching with Go Version in Snapcraft YAML..." 1
+    else
+        echo "The Go Version is set correctly..."
+    fi
+
     # Check if the Go Version is correct.
     local go_version=$(echo $go_snapcraft_version | cut -d "/" -f 1)
     echo "Detected Go Version -- $go_version" 
     
     if [[ "$go_snap_version" != "$go_version" ]]; then
-        echo "Error detected!!!"
-	    exit_with_message "The Go Version specified in the snapcraft.yaml file does not match with the version present in the Snap Packages. Please verify..." 1
+        echo "Snap Latest stable version -- $go_snap_version"
+        echo "Consider latest stable version when compared to $go_version...?"
     else
 	    echo "$go_version matches with the version in the Snap Packages"
-        echo "The GO FIPS Version has been set correctly..." 
     fi
 }
 
@@ -179,8 +190,10 @@ check_required_variables() {
 # 6. Check if two ciphers which are supposed to be removed are present or not.
 check_ciphers_present() {
     # Two of the ciphers TLS_RSA_WITH_3DES_EDE_CBC_SHA TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA are not to be present in the kube-apiserver YAML. 
+    # Adding few more ciphers to be removed.
+    # TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA
     # These two ciphers must be checked.
-    ciphers_list=("TLS_RSA_WITH_3DES_EDE_CBC_SHA" "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA")
+    ciphers_list=("TLS_RSA_WITH_3DES_EDE_CBC_SHA" "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA" "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA" "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA")
     cipher_line=$(grep "tls-cipher-suites" "$KUBE_APISERVER_FILE")
     for cipher in "${ciphers_list[@]}"; do
 	    # Find if the cipher is present in the file.
