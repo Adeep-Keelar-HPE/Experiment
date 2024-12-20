@@ -48,7 +48,7 @@ jobs:
       - run: echo "Attempting to build the snap package now!!!"
       - name: Setup a Snap Package Name for the Microk8s.
         run: |
-          echo "SNAP_NAME=microk8s-fips-v${{ env.KUBE_VER }}-$(date +'%Y_%m_%d')-${{ github.run_id }}_amd.snap"
+          echo "SNAP_NAME=microk8s-fips-v${{ env.KUBE_VER }}-$(date +'%Y_%m_%d')-${{ github.run_id }}_amd.snap" >> $GITHUB_ENV
 
       - name: Build Snap Package
         run: |
