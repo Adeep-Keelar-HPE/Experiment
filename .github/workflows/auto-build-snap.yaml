@@ -1,0 +1,16 @@
+name: Auto Build Snap
+on:
+  push:
+    branches:
+      - microk8s-1.30
+jobs:
+  build:
+    name: Build Auto Snap Package
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout repository.
+        uses: actions/checkout@v3
+
+      - name: Tell Branch Name.
+        run: |
+          echo "Branch_Name=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
