@@ -1,4 +1,4 @@
-=name: Build Snap Test
+name: Build Snap Test
 run-name: ${{ github.actor }} is testing out GitHub Actions
 on:
   workflow_dispatch:
@@ -7,21 +7,10 @@ on:
         description: 'Kubernetes Version to build the Snap Package of'
         required: true
         type: string
-      validation-type:
-        description: 'Type of Validation to run'
-        required: true
-        type: choice
-        options:
-          - pre-repo
-          - post-repo
   workflow_call:
     inputs:
       kubernetes-version:
         description: 'Kubernetes Version to build the Snap Package of'
-        required: true
-        type: string
-      validation-type:
-        description: 'Type of Validation to run'
         required: true
         type: string
 jobs:
@@ -30,62 +19,64 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-      - name: Checkout code
+      - name: Tell Branch Name.
+        run: |
+          echo "Branch_Name=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+
+      - run: echo $Branch_Name
+
+      - name: Checkout repository.
         uses: actions/checkout@v3
         with:
-          ref: microk8s-1.30 # Hard-coding branch for testing purpose.
-      
-      - name: Checkout main branch
-        uses: actions/checkout@v3
-        with:
-          ref: main
-          path: main-src
+          ref: ${{ env.Branch_Name }}
 
       - name: Run Pre-Validation
         run: |
           echo "Running Pre-Validation..."
-          chmod +x main-src/necessary-scripts/config.sh
-          chmod +x main-src/necessary-scripts/pre-validation.sh
-          main-src/necessary-scripts/pre-validation.sh ${{ inputs.kubernetes-version }} ${{ inputs.validation-type }}
+          chmod +x necessary-scripts/config.sh
+          chmod +x necessary-scripts/pre-validation.sh
+          necessary-scripts/pre-validation.sh ${{ inputs.kubernetes-version }} ${{ inputs.validation-type }}
 
-      # Let us no longer this step. 
-      # - name: Set up Proper Repo.
+      # # Run this step instead. 
+      # - name: Move the files from microk8s-src to the base.
       #   run: |
-      #     chmod +x main-src/scripts/proper-repo-setter.sh
-      #     main-src/scripts/proper-repo-setter.sh
-
-      # Run this step instead. 
-      - name: Move the files from microk8s-src to the base.
-        run: |
-          chmod +x main-src/necessary-scripts/repo-mover.sh
-          main-src/necessary-scripts/repo-mover.sh
+      #     chmod +x necessary-scripts/repo-mover.sh
+      #     necessary-scripts/repo-mover.sh
         
-      - name: Install LXD # Install LXD Container to build the snap package.
-        run: |
-          sudo lxd init --auto 
-          sudo usermod --append --groups lxd $USER
-          sg lxd -c 'lxc version'
+      # - name: Install LXD # Install LXD Container to build the snap package.
+      #   run: |
+      #     sudo lxd init --auto 
+      #     sudo usermod --append --groups lxd $USER
+      #     sg lxd -c 'lxc version'
 
-      - name: Install snapcraft
-        run: |
-          sudo snap install snapcraft --classic
+      # - name: Install snapcraft
+      #   run: |
+      #     sudo snap install snapcraft --classic
 
-      - name: Install snapd from candidate stable.
-        run: |
-          sudo snap refresh snapd --channel=latest/stable
+      # - name: Install snapd from candidate stable.
+      #   run: |
+      #     sudo snap refresh snapd --channel=latest/stable
 
-      - run: echo "Attempting to build the snap package now!!!"
+      # - run: echo "Attempting to build the snap package now!!!"
 
-      - name: Build Snap Package
-        run: |
-          sg lxd -c 'snapcraft --use-lxd'
-          sudo mv microk8s*.snap microk8s-fips.snap
+      # - name: Build Snap Package
+      #   run: |
+      #     sg lxd -c 'snapcraft --use-lxd'
+      #     sudo mv microk8s*.snap microk8s-fips.snap
 
       - name: Generate info.json 
         run: |
-          chmod +x main-src/necessary-scripts/package_info_generator/trial.sh
-          main-src/necessary-scripts/package_info_generator/trial.sh ${{ inputs.kubernetes-version }}
+          chmod +x necessary-scripts/package_info_generator/trial.sh
+          necessary-scripts/package_info_generator/trial.sh ${{ inputs.kubernetes-version }}
           
       - name: Print file.
         run: |
           cat info.json
+
+      - name: Setup Folder Name for JFrog Package to be pushed.
+        run: |
+          echo "FOLDER_NAME=$(v{{ inputs.kubernetes-version}}-manual-${GITHUB_RUN_NUMBER}-${{ github.run_id }})" >> $GITHUB_ENV
+      
+      - name: Print Folder Name.
+        run: |
+          echo $FOLDER_NAME

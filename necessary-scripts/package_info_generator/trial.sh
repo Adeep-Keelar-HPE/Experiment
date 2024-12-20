@@ -6,7 +6,7 @@ date_value=$(date +"%b_%d_%Y")
 
 new_snap_package_name="microk8s-fips-v$kubernetes_version"_"$date_value"_amd.snap
 
-checksum_sha=$(sha256sum microk8s-fips.snap | awk '{print $1}')
+checksum_sha=$(sha256sum $0 | awk '{print $1}')
 
 # Generate json file.
 cat << EOF > info.json
