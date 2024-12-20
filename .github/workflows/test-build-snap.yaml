@@ -75,7 +75,7 @@ jobs:
 
       - name: Setup Folder Name for JFrog Package to be pushed.
         run: |
-          echo "FOLDER_NAME=$(v{{ inputs.kubernetes-version}}-manual-${GITHUB_RUN_NUMBER}-${{ github.run_id }})" >> $GITHUB_ENV
+          echo "FOLDER_NAME=v$({{ inputs.kubernetes-version}}-manual-${GITHUB_RUN_NUMBER}-${{ github.run_id }})" >> $GITHUB_ENV
       
       - name: Print Folder Name.
         run: |
