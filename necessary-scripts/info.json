@@ -32,7 +32,7 @@
             "Python_Version": 3.8,
             "Pause_Image_Version": 3.9,
             "ETCD_Version": "v3.5.10",
-            "Go_Version": "1.22-fips",
+            "Go_Version": "1.21-fips",
             "K8s_dqlite_Version": "v1.2.0",
             "Containerd_Version": "v1.6.28",
             "Helm_Version": "v3.11.0"
