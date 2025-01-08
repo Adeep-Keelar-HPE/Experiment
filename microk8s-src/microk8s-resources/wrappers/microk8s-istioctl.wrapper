@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+set -eu
+
+. $SNAP/actions/common/utils.sh
+use_snap_env
+
+if [ ! -f "${SNAP_DATA}/bin/istioctl" ]; then
+  echo "Istio not available, try enabling is with 'microk8s enable istio'"
+  exit 0
+fi
+
+source $SNAP/actions/common/utils.sh
+
+if [ -e ${SNAP_DATA}/var/lock/clustered.lock ]
+then
+  echo "This MicroK8s deployment is acting as a node in a cluster. Please use the microk8s istioctl on the master."
+  exit 0
+fi
+
+if echo "$*" | grep -v -q -- '--kubeconfig'; then
+  exit_if_no_permissions
+fi
+
+ARCH=$(arch)
+if ! [ "${ARCH}" = "amd64" ]
+then
+  echo "Istio is not available for ${ARCH}"
+else
+  exit_if_stopped
+  "${SNAP_DATA}/bin/istioctl" --kubeconfig=${SNAP_DATA}/credentials/client.config "$@"
+fi

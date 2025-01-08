@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+set -eu
+
+source $SNAP/actions/common/utils.sh
+
+use_snap_env
+
+if [ -e ${SNAP_DATA}/var/lock/clustered.lock ]
+then
+  echo "This MicroK8s deployment is acting as a node in a cluster. Please use the microk8s refresh-certs command on the master"
+  echo "and then return to this node to perform a microk8s leave and re-join."
+  exit 0
+fi
+
+exit_if_not_root
+
+${SNAP}/usr/bin/python3 ${SNAP}/scripts/wrappers/refresh_certs.py "${@}"

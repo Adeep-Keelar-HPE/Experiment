@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -eu
+
+source $SNAP/actions/common/utils.sh
+
+use_snap_env
+
+exit_if_no_permissions
+
+${SNAP}/usr/bin/python3 ${SNAP}/scripts/wrappers/addons.py "${@}"

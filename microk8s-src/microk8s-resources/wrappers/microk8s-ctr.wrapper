@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -eu
+
+source $SNAP/actions/common/utils.sh
+
+use_snap_env
+
+exit_if_no_permissions
+
+export CONTAINERD_SNAPSHOTTER=$(snapshotter)
+
+if ! [ -e $SNAP_DATA/args/ctr ]
+then
+  echo "Arguments file $SNAP_DATA/args/ctr is missing."
+  exit 1
+fi
+
+declare -a args="($(cat $SNAP_DATA/args/ctr))"
+
+run_with_sudo "${SNAP}/bin/ctr" "${args[@]}" "$@"

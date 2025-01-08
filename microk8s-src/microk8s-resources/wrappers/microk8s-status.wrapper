@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+set -eu
+
+source $SNAP/actions/common/utils.sh
+
+use_snap_env
+
+exit_if_no_permissions
+
+if [ -e ${SNAP_DATA}/var/lock/clustered.lock ]
+then
+    echo "This MicroK8s deployment is acting as a node in a cluster."
+    echo "Please use the control plane node."
+    exit 0
+fi
+
+exit_if_low_memory_guard
+
+${SNAP}/usr/bin/python3 ${SNAP}/scripts/wrappers/status.py "${@}"

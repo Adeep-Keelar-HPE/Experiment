@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+set -eu
+
+source $SNAP/actions/common/utils.sh
+
+use_snap_env
+
+exit_if_no_permissions
+
+if [ -e ${SNAP_DATA}/var/lock/clustered.lock ]
+then
+  echo "This MicroK8s deployment is acting as a node in a cluster. Please use microk8s leave."
+  exit 1
+fi
+
+if [ "$#" -eq 0 ]; then
+    echo "Please provide the node you want to remove."
+  exit 1
+fi
+
+if [ -e "${SNAP_DATA}/var/lock/ha-cluster" ] && [ "$#" -eq 2 ] && ! [ "$2" == "--force" ] ; then
+    echo "Please provide the node and the optional --force flag."
+  exit 1
+fi
+
+${SNAP}/usr/bin/python3 ${SNAP}/scripts/wrappers/remove_node.py "$@"

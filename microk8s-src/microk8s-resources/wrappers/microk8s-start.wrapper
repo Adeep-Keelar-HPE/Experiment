@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+
+set -eu
+
+source $SNAP/actions/common/utils.sh
+
+use_snap_env
+
+if [ -e ${SNAP_DATA}/var/lock/clustered.lock ]
+then
+    echo "This MicroK8s deployment is acting as a node in a cluster."
+    echo "Use 'snap start microk8s' to start services on this node."
+    exit 0
+fi
+
+exit_if_not_root
+exit_if_no_permissions
+
+PARSED=$(getopt --options=lho: --longoptions=help,output:,disable-low-memory-guard --name "$@" -- "$@")
+eval set -- "$PARSED"
+while true; do
+    case "$1" in
+        --disable-low-memory-guard)
+            rm "${SNAP_DATA}/var/lock/low-memory-guard.lock" || true
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: microk8s start [OPTIONS]"
+            echo
+            echo "Start Kubernetes services"
+            echo
+            echo "Options:"
+            echo " -h, --help                   Show this help"
+            echo " --disable-low-memory-guard   Start MicroK8s in machines with RAM < 512MB"
+            exit 0
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            echo "microk8s start: invalid option -- $1"
+            exit 1
+    esac
+done
+
+exit_if_low_memory_guard
+
+
+if ! run_with_sudo preserve_env snapctl start ${SNAP_NAME} --enable
+then
+    echo 'Failed to start microk8s services. Check snapd logs with "journalctl -u snapd.service"'
+    exit 1
+else
+    start_all_containers
+    if run_with_sudo test -e ${SNAP_DATA}/var/lock/stopped.lock
+    then
+        # Mark the api server as starting
+        run_with_sudo rm -f ${SNAP_DATA}/var/lock/stopped.lock &> /dev/null
+    fi
+fi
+
+wait_for_node

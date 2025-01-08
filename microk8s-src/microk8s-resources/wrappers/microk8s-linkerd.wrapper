@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+set -eu
+
+. $SNAP/actions/common/utils.sh
+
+use_snap_env
+
+if [ -e ${SNAP_DATA}/var/lock/clustered.lock ]
+then
+  echo "This MicroK8s deployment is acting as a node in a cluster. Please use the microk8s linkerd on the master."
+  exit 0
+fi
+
+if [ ! -f "${SNAP_DATA}/bin/linkerd" ]; then
+  echo "Linkerd not available, try enabling Linkerd. 'microk8s enable linkerd' or 'microk8s enable linkerd:--proxy-auto-inject' "
+  exit 0
+fi
+
+if echo "$*" | grep -v -q -- '--kubeconfig'; then
+  exit_if_no_permissions
+fi
+
+exit_if_stopped
+
+"${SNAP_DATA}/bin/linkerd" --kubeconfig="${SNAP_DATA}"/credentials/client.config "$@"
