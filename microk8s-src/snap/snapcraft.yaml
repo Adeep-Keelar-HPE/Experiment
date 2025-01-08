@@ -23,7 +23,7 @@ parts:
     plugin: nil
     override-build: |
       snap install go --classic --channel 1.22-fips/stable
-      snap refresh go --channel 1.22-fips/stable)
+      snap refresh go --channel 1.22-fips/stable
     build-packages:
       - autoconf
       - automake
