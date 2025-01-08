@@ -20,17 +20,15 @@ set -euo pipefail
 # Adding the user-argument check for the branch name.
 if [ $# -eq 0 ]; then
     echo "No branch name is provided..."
-    echo "$0 <kubernetes-version> <action-type>"
+    echo "$0 <kubernetes-version>"
     exit 1
 fi
 
 # Capture the Kubernetes Version as the argument.
 kubernetes_arg=$1
-action_type=$2
 
 # Setting up the configuration file for the pre-validation scripts.
-source $(pwd)/necessary-scripts/config.sh $kubernetes_arg $action_type
-
+source $(pwd)/necessary-scripts/config.sh $kubernetes_arg 
 # 0 Function to exit the script. 
 exit_with_message() {
     local message="$1"
@@ -101,14 +99,14 @@ check_go_version() {
     # The Go Version is set in two places, the snapcraft YAML file and in the snap info list.
     # The tracking section will be covering the latest stable FIPS Version. Only FIPS version will be looked into.
     local go_snap_version=$(snap info go | grep fips | awk 'NR==2 {print $1}' | sed -E 's/([0-9]+\.[0-9]+-fips).*/\1/')
-    echo "Latest version of Go FIPS from Snap --- $go_snap_version"
+    echo "Latest version of Go FIPS from Snap Releases --- $go_snap_version"
     # Find the specified Go Version in the Snapcraft.yaml
 
     # The Go Version is set in the snapcraft.yaml file.
     local go_snapcraft_version=$(yq -e '.parts.build-deps.override-build' "$SNAP_YAML_PATH" | sed -E 's/.*--channel ([^ ]+).*/\1/' | sed '/^[[:space:]]*$/d' | head -n 1)
-    echo "Detected Go Version -- $go_snapcraft_version"
+    echo "Detected Go Version in the Snapcraft YAML -- $go_snapcraft_version"
     local go_snapcraft_packages_count=$(yq -e '.parts.build-deps.override-build' "$SNAP_YAML_PATH" | sed -E 's/.*--channel ([^ ]+).*/\1/' | sed '/^[[:space:]]*$/d' | uniq | wc -l)
-    echo "Go Packages from the Snapcraft -- ${go_snapcraft_packages_count}"
+    echo "Go Packages Count from the Snapcraft -- ${go_snapcraft_packages_count}"
     if [[ "$go_snapcraft_packages_count" -ne 1 ]]; then
         echo "Error detected!!!"
         exit_with_message "There is more than one Go Version set in the snapcraft.yaml file. Please set only one valid Go-FIPS version..."
@@ -127,7 +125,7 @@ check_go_version() {
 
     # Check if the Go Version is correct.
     local go_version=$(echo $go_snapcraft_version | cut -d "/" -f 1)
-    echo "Detected Go Version -- $go_version" 
+    echo "Detected Go Version From Snapcraft YAML -- $go_version" 
     
     if [[ "$go_snap_version" != "$go_version" ]]; then
         echo "Snap Latest stable version -- $go_snap_version"
