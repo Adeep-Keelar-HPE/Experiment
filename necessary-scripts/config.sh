@@ -1,4 +1,4 @@
-# !/bin/bash
+#!/bin/bash
 
 # This is the configuration file for the pre-validation scripts.
 # All of the hard-coded values and settings are present in this file.
