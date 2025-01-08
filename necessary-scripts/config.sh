@@ -1,32 +1,12 @@
-#!/bin/bash
+# !/bin/bash
 
 # This is the configuration file for the pre-validation scripts.
 # All of the hard-coded values and settings are present in this file.
-
-# Adding the user-argument check for the Kubernetes Version.
-if [ $# -eq 0 ]; then
-    echo "No Kubernetes Version or Action type is provided..."
-    echo "$0 <Kubernetes Version> <action-type>"
-    exit 1
-fi
-
-# Arguments 
-Kubernetes_arg=$1
-Action_type=$2
-
-# The Action Type will specify the type of pre-validation will be performed.
-# Is it pre-repo or post-repo ?
-if [ "$Action_type" != "pre-repo" ] && [ "$Action_type" != "post-repo" ]; then
-    echo "Invalid Action Type provided..."
-    echo "Action type should be either pre-repo or post-repo..."
-    exit 1
-fi
 
 BASE_PATH=$(pwd)
 SOURCE_PATH="$BASE_PATH/microk8s-src"
 SCRIPT_PATH="$BASE_PATH/necessary-scripts"
 INFO_JSON="$SCRIPT_PATH/info.json"
-
 
 KUBERNETES_VERSION_PATH="$SOURCE_PATH/build-scripts/components/kubernetes/version.sh"
 SNAP_YAML_PATH="$SOURCE_PATH/snap/snapcraft.yaml"
@@ -40,6 +20,16 @@ MICROK8S_HELM_PATH="$SOURCE_PATH/build-scripts/components/helm/version.sh"
 MICROK8S_DQLITE_PATH="$SOURCE_PATH/build-scripts/components/k8s-dqlite/version.sh"
 MICROK8S_CONTAINERD_PATH="$SOURCE_PATH/build-scripts/components/containerd/version.sh"
 MICROK8S_ETCD_PATH="$SOURCE_PATH/build-scripts/components/etcd/version.sh"
+
+# Adding the user-argument check for the Kubernetes Version.
+if [ $# -eq 0 ]; then
+    echo "No Kubernetes Version is provided..."
+    echo "$0 <Kubernetes Version>"
+    exit 1
+fi
+
+# Arguments 
+Kubernetes_arg=$1
 
 # Check if jq is installed.
 check_jq_exists() {
