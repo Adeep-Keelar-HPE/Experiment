@@ -3,7 +3,7 @@ name: Auto Build Snap
 on:
   push:
     branches:
-      - microk8s-1.30
+      - microk8s-*
 jobs:
   build:
     name: Build Auto Snap Package
